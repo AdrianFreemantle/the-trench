@@ -24,7 +24,7 @@ The default assumption is a single primary maintainer plus occasional collaborat
 
 ### Branch Types
 
-- Feature branches: `feature/<short-description>`
+- Feature branches: `feat/<short-description>`
 - Fix branches: `fix/<short-description>`
 - Infra branches: `infra/<short-description>`
 - Experiment branches: `exp/<short-description>` (must be short lived)
