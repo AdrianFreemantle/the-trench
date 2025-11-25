@@ -1,0 +1,14 @@
+{
+  "name": "order-worker",
+  "version": "0.1.0",
+  "description": "Background worker skeleton for The Trench",
+  "main": "src/worker.js",
+  "type": "commonjs",
+  "scripts": {
+    "dev": "node src/worker.js",
+    "start": "node src/worker.js"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "MIT"
+}

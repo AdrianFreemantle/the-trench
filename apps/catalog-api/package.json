@@ -1,0 +1,17 @@
+{
+  "name": "catalog-api",
+  "version": "0.1.0",
+  "description": "Tiny catalog API skeleton for The Trench lab",
+  "main": "src/index.js",
+  "type": "commonjs",
+  "scripts": {
+    "dev": "node src/index.js",
+    "start": "node src/index.js"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "MIT",
+  "dependencies": {
+    "express": "^5.1.0"
+  }
+}

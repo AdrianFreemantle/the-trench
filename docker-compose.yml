@@ -1,0 +1,33 @@
+services:
+  catalog-api:
+    build:
+      context: ./apps/catalog-api
+    environment:
+      - PORT=4101
+    ports:
+      - '4101:4101'
+
+  orders-api:
+    build:
+      context: ./apps/orders-api
+    environment:
+      - PORT=4102
+    ports:
+      - '4102:4102'
+
+  order-worker:
+    build:
+      context: ./apps/order-worker
+    environment:
+      - WORKER_INTERVAL_MS=5000
+
+  shop-ui:
+    build:
+      context: ./apps/shop-ui
+    environment:
+      - PORT=3000
+    ports:
+      - '3000:3000'
+    depends_on:
+      - catalog-api
+      - orders-api

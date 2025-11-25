@@ -34,6 +34,8 @@ yarn-error.log*
 pnpm-debug.log*
 dist/
 .next/
+.next-static/
+.vercel/
 nuxt-dist/
 .out/
 out/
