@@ -4,6 +4,9 @@
 
 **Goal:** Establish repo structure, tooling choices, and conventions before writing infra or app code.
 
+Current Step: 1
+Completed Stes: 0
+
 Steps:
 ## Phase 0: Repository Setup, Conventions, and App Skeletons
 Establish the repository structure, conventions, governance, and minimal service skeletons needed for later infrastructure and CI/CD work.  
@@ -159,70 +162,217 @@ At the end of Phase 0:
 
 ## Phase 1: Core Azure Infrastructure with Terraform
 
-**Goal:** Provision foundational Azure infrastructure (subscription-level resources, VNet, AKS, key PaaS) with Terraform.
+**Goal:** Provision the foundational Azure environment with Terraform: hub–spoke VNets, Firewall, ACR, private AKS, Key Vault, Postgres Flexible, Service Bus, and Private Endpoints.  
+Execution is **manual `terraform apply`** for now; CI/CD for infra comes later.
 
-Steps:
+---
 
-1.1 Terraform bootstrap:
-- Create `infra/terraform/` with modules / root config:
+### 1.1 Terraform Bootstrap
+
+Create and initialize `infra/terraform/`:
+
+- Files:
   - `providers.tf`
-  - `backend.tf` (for now, local state)
-  - `main.tf` and module structure
-- Configure Azure provider authentication for local dev (az CLI)
+  - `backend.tf` (local state for Phase 1)
+  - `main.tf`
+  - `variables.tf`
+  - `outputs.tf`
 
-1.2 Resource groups and naming:
-- Define one or more RGs (e.g. `rg-aks-lab-core`, `rg-aks-lab-data`)
-- Implement consistent naming convention for all resources
+- Actions:
+  - Configure Azure provider authentication (via `az login`).
+  - Define:
+    - `var.environment` (start with `"dev"`).
+    - `locals` for naming and tagging (using `trench-<service>-<resource>-<env>` and the tag set from CONVENTIONS.md).
 
-1.3 Networking:
-- Define hub VNet:
-  - Address space
-  - Subnets for firewall and shared services
-- Define spoke VNet for AKS:
-  - Subnet for AKS nodes
-  - Subnets for Private Endpoints
-- Peering between hub and spoke VNets
+**Outcome:**
+- You can run `terraform init` and `terraform plan` successfully.
 
-1.4 Azure Firewall (basic initial setup):
-- Deploy Azure Firewall in hub VNet
-- Configure minimal rules to allow:
-  - AKS control plane traffic
-  - Outbound access for nodes as needed
-- Plan to refine firewall rules later
+---
 
-1.5 Azure Container Registry (ACR):
-- Deploy ACR in core RG
-- Integrate later with AKS for image pulls
+### 1.2 Resource Groups and Tagging
 
-1.6 AKS cluster:
-- Provision private AKS cluster:
-  - Private API
-  - Attach to spoke VNet subnet
-  - Two node pools:
-    - System pool
-    - User pool
-  - Enable OIDC issuer + Workload Identity
-- Configure RBAC enabled
+Create at least these RGs:
 
-1.7 Azure PaaS services:
-- Key Vault:
-  - For secrets
-- Azure Database for PostgreSQL Flexible:
-  - Minimal SKU for dev
-  - In data RG
-- Azure Service Bus:
-  - Namespace + basic entities (topic/queue)
-- Private Endpoints:
-  - For Key Vault, Postgres, Service Bus into spoke VNet
+- `rg-trench-core-dev`  
+  ACR, Key Vault, Service Bus, Firewall, hub VNet.
 
-1.8 DNS setup in Azure:
-- Internal DNS (Azure DNS or private DNS zones)
-- Records for Private Endpoints and internal hostnames
+- `rg-trench-data-dev`  
+  Postgres Flexible + related Private Endpoint resources.
 
-Checkpoint:
-- At the end of Phase 1, you can:
-  - `terraform apply` to build the core platform
-  - See AKS cluster, ACR, Key Vault, Postgres, Service Bus, Firewall, VNets
+- `rg-trench-aks-dev`  
+  AKS cluster + spoke VNet.
+
+Apply consistent tags to every resource via Terraform:
+
+- `owner`
+- `environment`
+- `cost-center`
+- `purpose`
+
+**Outcome:**
+- Resource groups exist with consistent naming and tags.
+
+---
+
+### 1.3 Networking: Hub–Spoke VNets
+
+Provision hub and spoke VNets using Terraform.
+
+**Hub VNet (core)**
+- Address space (example): `10.0.0.0/16`
+- Subnets:
+  - `AzureFirewallSubnet`
+  - `shared-services`
+
+**Spoke VNet (aks)**
+- Address space (example): `10.1.0.0/16`
+- Subnets:
+  - `aks-nodes`
+  - `private-endpoints`
+
+**Peering**
+- Hub ↔ spoke VNet peering in both directions.
+- Allow forwarded traffic where required.
+
+**Outcome:**
+- Baseline network topology in place for private AKS and Private Endpoints.
+
+---
+
+### 1.4 Azure Firewall (Minimal Initial Policy)
+
+Deploy Azure Firewall into the hub VNet:
+
+- Place firewall in `AzureFirewallSubnet`.
+- Assign a public IP (for now).
+- Create a **minimal** rule set:
+  - Network rules / application rules sufficient for:
+    - AKS control plane connectivity.
+    - Node pool image pulls from ACR / Microsoft endpoints.
+  - Everything else denied by default.
+
+Document that firewall rules are intentionally loose in Phase 1 and will be tightened in later phases.
+
+**Outcome:**
+- Egress from the AKS spoke will be forced through Firewall (once UDRs are configured in later phases).
+
+---
+
+### 1.5 Azure Container Registry (ACR)
+
+Deploy ACR into `rg-trench-core-dev`:
+
+- Basic SKU to control cost.
+- Naming consistent with conventions (for example `trenchacrdev`).
+
+Do not yet wire AKS to ACR via Terraform; that comes in the AKS section.
+
+**Outcome:**
+- ACR exists and is ready to receive images from your GitHub-based CI later.
+
+---
+
+### 1.6 Private AKS Cluster
+
+Provision AKS in `rg-trench-aks-dev` with:
+
+- Node resource group (auto or explicit).
+- Attached to the spoke VNet `aks-nodes` subnet.
+- API server private endpoint only (no public API).
+- RBAC enabled.
+- OIDC issuer enabled.
+- Workload Identity enabled.
+- Two node pools:
+  - `system` pool (small SKU, system workloads only).
+  - `user` pool (for app workloads later).
+
+Also:
+
+- Configure AKS to use the ACR created in 1.5 (either via `azurerm_kubernetes_cluster` `acr` integration or role assignment).
+
+**Outcome:**
+- A private AKS cluster exists and can pull images from ACR (once CI pushes them).
+- `az aks get-credentials` works from a machine with network access (via VPN/Bastion in a later phase).
+
+---
+
+### 1.7 Azure PaaS: Key Vault, Postgres Flexible, Service Bus
+
+Provision the minimal PaaS set in Terraform.
+
+**Key Vault (rg-trench-core-dev)**
+
+- Standard SKU.
+- Soft-delete enabled.
+- Private Endpoint into `private-endpoints` subnet in the spoke VNet.
+- Network ACLs locked to:
+  - Private link only
+  - Trusted Azure services as needed.
+
+**PostgreSQL Flexible Server (rg-trench-data-dev)**
+
+- Dev-grade SKU (smallest viable tier).
+- Private access only (no public endpoint).
+- Private Endpoint into `private-endpoints` subnet.
+- Server to host schemas for:
+  - `catalog-api`
+  - `orders-api`
+
+**Service Bus (rg-trench-core-dev)**
+
+- Service Bus namespace.
+- Messaging entities:
+  - Topic or queue for `OrderPlaced` (e.g. `orders`).
+- Private Endpoint into `private-endpoints` subnet.
+
+**Outcome:**
+- All core PaaS resources exist, but no identities, roles, or workloads use them yet.
+
+---
+
+### 1.8 Private DNS for PaaS / Private Endpoints
+
+Configure Azure Private DNS zones and links for:
+
+- Key Vault `privatelink.vaultcore.azure.net`
+- Postgres Flexible `privatelink.postgres.database.azure.com`
+- Service Bus `privatelink.servicebus.windows.net`
+
+Actions:
+
+- Create Private DNS zones.
+- Link them to:
+  - Hub VNet
+  - Spoke VNet
+
+Terraform should create DNS A records for each Private Endpoint.
+
+**Outcome:**
+- Name resolution for all Private Endpoints works from the AKS spoke VNet.
+
+---
+
+### 1.9 Checkpoint
+
+By the end of Phase 1:
+
+- `terraform apply` successfully creates:
+  - `rg-trench-core-dev`, `rg-trench-data-dev`, `rg-trench-aks-dev`
+  - Hub and spoke VNets with peering
+  - Azure Firewall in hub
+  - ACR
+  - Private AKS cluster (no add-ons)
+  - Key Vault (with Private Endpoint)
+  - Postgres Flexible (with Private Endpoint)
+  - Service Bus namespace + `OrderPlaced` entity (with Private Endpoint)
+  - Private DNS zones and links for all of the above
+
+You **do not** yet:
+
+- Install ArgoCD, ingress controllers, CSI drivers, Prometheus/Grafana, or any app workloads.
+- Automate Terraform via CI/CD.
+
+Those belong in **Phase 2** (cluster add-ons + identity plumbing) and later phases.
 
 ---
 
