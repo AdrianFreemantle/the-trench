@@ -1,0 +1,442 @@
+# Plan
+
+## Phase 0: Repo, Structure, and Working Agreements
+
+**Goal:** Establish repo structure, tooling choices, and conventions before writing infra or app code.
+
+Steps:
+
+0.1 Create a mono-repo (e.g. `cloud-native-aks-lab`):
+- Top-level folders:
+  - `infra/` (Terraform, cluster add-ons)
+  - `apps/` (backend services, UI)
+  - `ops/` (runbooks, ADRs, docs)
+  - `k8s/` (Helm charts / manifests for apps and add-ons)
+  - `ci/` (GitHub Actions workflows, pipeline configs)
+
+0.2 Define coding and infra conventions:
+- Preferred languages (Python / Node.js) and versions
+- Container base images (minimal, official images)
+- Naming conventions for resources (prefixes, environment markers)
+- Tagging strategy for Azure resources (owner, env, cost center, purpose)
+
+0.3 Set up ADR template:
+- Under `ops/adr/`
+- Template capturing:
+  - Context
+  - Options considered
+  - Decision
+  - Consequences
+
+0.4 Initialize Git + GitHub repo:
+- Add `README.md` summarizing the project
+- Add basic `.gitignore` for Terraform, Node, Python, etc.
+
+---
+
+## Phase 1: Core Azure Infrastructure with Terraform
+
+**Goal:** Provision foundational Azure infrastructure (subscription-level resources, VNet, AKS, key PaaS) with Terraform.
+
+Steps:
+
+1.1 Terraform bootstrap:
+- Create `infra/terraform/` with modules / root config:
+  - `providers.tf`
+  - `backend.tf` (for now, local state)
+  - `main.tf` and module structure
+- Configure Azure provider authentication for local dev (az CLI)
+
+1.2 Resource groups and naming:
+- Define one or more RGs (e.g. `rg-aks-lab-core`, `rg-aks-lab-data`)
+- Implement consistent naming convention for all resources
+
+1.3 Networking:
+- Define hub VNet:
+  - Address space
+  - Subnets for firewall and shared services
+- Define spoke VNet for AKS:
+  - Subnet for AKS nodes
+  - Subnets for Private Endpoints
+- Peering between hub and spoke VNets
+
+1.4 Azure Firewall (basic initial setup):
+- Deploy Azure Firewall in hub VNet
+- Configure minimal rules to allow:
+  - AKS control plane traffic
+  - Outbound access for nodes as needed
+- Plan to refine firewall rules later
+
+1.5 Azure Container Registry (ACR):
+- Deploy ACR in core RG
+- Integrate later with AKS for image pulls
+
+1.6 AKS cluster:
+- Provision private AKS cluster:
+  - Private API
+  - Attach to spoke VNet subnet
+  - Two node pools:
+    - System pool
+    - User pool
+  - Enable OIDC issuer + Workload Identity
+- Configure RBAC enabled
+
+1.7 Azure PaaS services:
+- Key Vault:
+  - For secrets
+- Azure Database for PostgreSQL Flexible:
+  - Minimal SKU for dev
+  - In data RG
+- Azure Service Bus:
+  - Namespace + basic entities (topic/queue)
+- Private Endpoints:
+  - For Key Vault, Postgres, Service Bus into spoke VNet
+
+1.8 DNS setup in Azure:
+- Internal DNS (Azure DNS or private DNS zones)
+- Records for Private Endpoints and internal hostnames
+
+Checkpoint:
+- At the end of Phase 1, you can:
+  - `terraform apply` to build the core platform
+  - See AKS cluster, ACR, Key Vault, Postgres, Service Bus, Firewall, VNets
+
+---
+
+## Phase 2: Cluster Add-ons and Security Plumbing
+
+**Goal:** Install core cluster add-ons and wire Workload Identity and Key Vault CSI.
+
+Steps:
+
+2.1 Cluster access:
+- Configure local kubectl access via:
+  - Az CLI (`az aks get-credentials` with private endpoint access and/or Bastion/VPN)
+- Validate you can:
+  - `kubectl get nodes`
+  - `kubectl get pods -A`
+
+2.2 Add-on deployment approach:
+- Decide:
+  - Use Terraform + Helm provider
+  - Or use ArgoCD to manage add-on Helm charts
+- For initial simplicity, you can:
+  - Install ArgoCD via Terraform/Helm
+  - Then let ArgoCD manage the rest
+
+2.3 Install ArgoCD:
+- Namespace (e.g. `argocd`)
+- Deploy ArgoCD using Helm or manifests
+- Configure ArgoCD to sync from your Git repo
+
+2.4 Workload Identity plumbing:
+- Confirm AKS OIDC + Workload Identity enabled
+- Create one or more Entra app registrations / workload identities for:
+  - Postgres access
+  - Key Vault access
+  - Service Bus access
+- Wire Azure roles:
+  - Key Vault (e.g. Key Vault Secrets User)
+  - Postgres (via AAD integration if used)
+  - Service Bus (Contributor/Owner/Specific roles)
+- Document full path from pod → Service Account → Federated Credential → Entra → role
+
+2.5 Key Vault CSI Driver:
+- Install Secrets Store CSI driver + Key Vault provider into cluster
+- Configure a sample Pod that:
+  - Uses Workload Identity
+  - Mounts a Key Vault secret via CSI volume
+- Confirm:
+  - Pod can read secret from file
+  - No Kubernetes Secret object created
+
+Checkpoint:
+- ArgoCD running
+- Workload Identity working for at least one test pod
+- Key Vault CSI driver working
+
+---
+
+## Phase 3: Edge, Cloudflare, and Ingress
+
+**Goal:** Expose the cluster securely via Cloudflare, using Cloudflare Tunnel and TLS.
+
+Steps:
+
+3.1 Cloudflare DNS:
+- Register / select domain
+- Configure DNS zone in Cloudflare
+- Point domain’s NS records at Cloudflare
+
+3.2 Cloudflare Tunnel (cloudflared):
+- Create a Cloudflare Tunnel manually first:
+  - Install `cloudflared` locally and establish a tunnel
+  - Map tunnel to a test HTTP service to validate end-to-end
+- Then migrate tunnel into AKS:
+  - Deploy `cloudflared` Deployment in a `infra-cloudflare` namespace
+  - Configure it to connect to the same tunnel
+  - Use a Service + Ingress in AKS as origin
+
+3.3 Ingress Controller:
+- Install NGINX Ingress Controller (or similar) in AKS:
+  - System node pool
+  - Internal Service (ClusterIP or internal LoadBalancer depending on tunnel setup)
+- Configure Ingress resource for a dummy app (e.g. simple echo service)
+
+3.4 TLS with Let’s Encrypt and DNS-01:
+- Install cert-manager
+- Configure DNS-01 solver for Cloudflare:
+  - Use Key Vault / CSI to store Cloudflare API token if needed
+- Create Ingress with TLS using Let’s Encrypt:
+  - Validate certificates issued successfully
+  - Set Cloudflare to Full (Strict) mode
+
+3.5 WAF and rate limiting:
+- On appropriate Cloudflare plan:
+  - Enable basic WAF rules for the domain
+  - Configure rate limiting for specific paths (e.g. login endpoints)
+- Document what is covered at Cloudflare vs in-cluster
+
+Checkpoint:
+- A test app is reachable via HTTPS over your domain:
+  - Browser → Cloudflare → Tunnel → AKS Ingress → Pod
+
+---
+
+## Phase 4: Observability Stack (Initial)
+
+**Goal:** Set up Prometheus, Grafana, OTEL, and basic alerting with exports to Azure Monitor.
+
+Steps:
+
+4.1 Prometheus + Grafana:
+- Deploy Prometheus (likely kube-prometheus-stack) via ArgoCD/Helm
+- Configure:
+  - Scraping of Kubernetes components
+  - Scraping of app namespaces
+- Deploy Grafana:
+  - Connect to Prometheus data source
+  - Import basic Kubernetes dashboards
+
+4.2 OTEL Collector:
+- Deploy OpenTelemetry Collector in its own namespace:
+  - Receivers for OTLP (from apps)
+  - Exporters to:
+    - Azure Monitor / App Insights / Log Analytics
+- Define basic pipelines:
+  - Traces: OTLP → Azure
+  - Logs: OTLP or stdout scraping → Azure (or leave logs only in Azure Monitor at first)
+  - Metrics: OTLP → Prometheus or directly to Azure if needed
+
+4.3 App instrumentation baseline:
+- Prepare libraries / patterns for:
+  - Structured logging
+  - OTEL tracer initialization
+  - Metrics (counter, histogram) for HTTP requests
+
+4.4 Alerting:
+- Configure Prometheus alert rules:
+  - High error rate
+  - High latency
+  - CPU/memory saturation
+- Configure Alertmanager or Grafana alerts:
+  - Email alerts to admin address
+
+Checkpoint:
+- You can see:
+  - Cluster metrics in Grafana
+  - At least one app’s metrics
+  - Logs and/or traces in Azure Monitor
+  - Test alerts hitting your email
+
+---
+
+## Phase 5: Data & Messaging Integration
+
+**Goal:** Wire Postgres, Mongo, and Service Bus into the cluster with Workload Identity + Key Vault CSI.
+
+Steps:
+
+5.1 Postgres integration:
+- Configure Postgres Flexible for:
+  - AAD auth (if used) or MI-based connection
+  - Private Endpoint confirmed
+- Create initial schema (manual or migration):
+  - For simplicity, initial migrations can be run via a CLI tool / script
+
+5.2 Service identity for Postgres:
+- Create Entra identity for backend services needing DB access
+- Assign appropriate roles for Postgres
+- Configure Kubernetes ServiceAccount + Workload Identity binding
+
+5.3 MongoDB in AKS:
+- Deploy MongoDB as:
+  - StatefulSet
+  - Headless Service
+  - PVCs using appropriate Storage Class
+- Minimal replica set for learning
+- Document clearly that this is lab-only, not production-grade
+
+5.4 Service Bus integration:
+- Ensure Service Bus Private Endpoint and DNS resolution are correct
+- Create entities (queues/topics) via Terraform or script
+- Create identity for messaging services and assign RBAC
+
+5.5 Test workloads:
+- Create small test pods / scripts that:
+  - Connect to Postgres via MI
+  - Connect to Mongo via internal service
+  - Send/receive messages from Service Bus
+
+Checkpoint:
+- You have a working data/messaging layer accessible from the cluster without static secrets.
+
+---
+
+## Phase 6: Application Services (Backend + UI) – v1
+
+**Goal:** Implement minimal but realistic app services that exercise the platform.
+
+Steps:
+
+6.1 Domain definition:
+- Define a simple business/domain scenario:
+  - Enough to justify:
+    - User accounts (via External ID)
+    - A few write/read operations
+    - Use of messaging (e.g. background processing)
+    - Use of both Postgres and Mongo
+- Document this domain at a high level (no full DDD, just enough structure).
+
+6.2 Backend services:
+- Implement 2–3 small services, e.g.:
+  - `api-gateway` or BFF for UI
+  - `orders-service` (Postgres)
+  - `events-service` (Mongo + Service Bus)
+- Each service:
+  - Uses OTEL for traces / metrics
+  - Uses structured logging to stdout
+  - Uses environment/config pattern aligned with 12-factor, while using Key Vault CSI for secrets
+  - Implements basic resilience:
+    - Timeouts
+    - Retries
+    - Circuit-breaking (via library or custom pattern)
+
+6.3 UI (Next.js) in AKS – first iteration:
+- Create a basic Next.js app:
+  - Server-side rendered pages
+  - Auth flows using Entra External ID
+- Containerize and deploy to AKS behind Ingress:
+  - Integrate with backend services
+
+6.4 Entra External ID integration:
+- Configure B2C / External ID tenant
+- Register apps:
+  - UI
+  - Backend APIs
+- Implement:
+  - Login / logout
+  - MFA (enforced via policies)
+  - Google social login
+- Validate tokens and scopes in backend
+
+6.5 Observability integration:
+- Confirm traces flow through:
+  - UI → API → downstream services → DB / Service Bus
+- Add Grafana dashboards for:
+  - Per-service metrics
+  - Error rates, latencies
+
+Checkpoint:
+- A user can:
+  - Log in via Entra External ID
+  - Perform a simple workflow that writes to Postgres, stores something in Mongo, and triggers a Service Bus message
+  - You can see the whole thing in metrics, logs, and traces
+
+---
+
+## Phase 7: CI/CD and GitOps
+
+**Goal:** Automate build, test, security checks, and deployments end-to-end.
+
+Steps:
+
+7.1 GitHub Actions – CI:
+- Create workflows to:
+  - Build each service image
+  - Run unit tests
+  - Run linting / static analysis
+  - Run SonarQube/SonarCloud analysis
+  - Build Next.js app
+  - Build container images
+  - Scan images with Trivy
+  - Push images to ACR
+
+7.2 GitOps with ArgoCD:
+- Structure `k8s/` manifests/Helm charts:
+  - `k8s/apps/` for app deployments
+  - `k8s/infra-addons/` for Prometheus, Grafana, OTEL, cloudflared, etc.
+- Configure ArgoCD Applications:
+  - One per app or per group
+- Set up ArgoCD to:
+  - Watch main branches for changes
+  - Auto-sync or manual-sync depending on desired workflow
+
+7.3 Promotion flow:
+- Define branch / tag strategy:
+  - e.g. `main` for dev environment
+- Define how:
+  - A code change results in:
+    - CI build + scan
+    - Image push
+    - Manifest update (tag change)
+    - ArgoCD sync and rollout
+
+7.4 Deployment safety:
+- Add:
+  - Readiness/liveness probes
+  - Rolling update strategies
+  - HPA manifests for key services
+- Validate rollbacks via:
+  - ArgoCD rollback or Git revert
+
+Checkpoint:
+- A single commit to main triggers:
+  - CI build, tests, scans
+  - Deployment to AKS via ArgoCD
+
+---
+
+## Phase 8: Hardening & Advanced Topics (Optional)
+
+**Goal:** Add advanced, more “enterprise-like” capabilities.
+
+Examples (each can be its own mini-phase):
+
+8.1 Rate limiting & DDoS:
+- More advanced Cloudflare rules
+- App-level rate limiting for specific endpoints
+
+8.2 Direct Key Vault usage:
+- Replace CSI in a test service with:
+  - Direct Key Vault SDK calls + caching
+- Compare and document tradeoffs
+
+8.3 Service mesh:
+- Introduce Istio / Linkerd:
+  - mTLS between services
+  - Traffic shifting
+  - Mesh-level metrics
+
+8.4 Dapr:
+- Introduce Dapr for:
+  - Service invocation
+  - Pub/Sub over Service Bus
+  - State store abstraction (e.g. Postgres/Redis)
+
+8.5 Full OSS observability:
+- Deploy:
+  - Tempo for traces
+  - Loki for logs
+- Switch OTEL exports to those
+- Compare with Azure Monitor-based setup
