@@ -155,33 +155,6 @@ At the end of Phase 0:
 - All four services exist as “hello world” containers
 - Local docker-compose works
 
-
-0.1 Create a mono-repo (e.g. `cloud-native-aks-lab`):
-- Top-level folders:
-  - `infra/` (Terraform, cluster add-ons)
-  - `apps/` (backend services, UI)
-  - `ops/` (runbooks, ADRs, docs)
-  - `k8s/` (Helm charts / manifests for apps and add-ons)
-  - `ci/` (GitHub Actions workflows, pipeline configs)
-
-0.2 Define coding and infra conventions:
-- Preferred languages (Python / Node.js) and versions
-- Container base images (minimal, official images)
-- Naming conventions for resources (prefixes, environment markers)
-- Tagging strategy for Azure resources (owner, env, cost center, purpose)
-
-0.3 Set up ADR template:
-- Under `ops/adr/`
-- Template capturing:
-  - Context
-  - Options considered
-  - Decision
-  - Consequences
-
-0.4 Initialize Git + GitHub repo:
-- Add `README.md` summarizing the project
-- Add basic `.gitignore` for Terraform, Node, Python, etc.
-
 ---
 
 ## Phase 1: Core Azure Infrastructure with Terraform
