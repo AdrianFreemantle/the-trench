@@ -124,3 +124,32 @@ prod
 
 Temporary environments must be prefixed (for example adrian-dev) and removed when no longer needed.
 
+---
+
+## 6. Secrets and Security Hygiene
+
+### Secret Storage
+- **Never** store sensitive values in Git, Kubernetes Secrets, or container images.
+- All long-lived secrets live in Azure Key Vault and are mounted via CSI or retrieved through the SDK with Workload Identity.
+- Short-lived local secrets belong in `.env.local` files that are ignored by Git. Provide `*.example` files when documentation is needed.
+
+### Access Patterns
+- Every workload that needs Azure access must use a dedicated Entra Workload Identity with least-privilege role assignments.
+- Kubernetes ServiceAccounts must be clearly mapped to their federated credentials and named `<app>-<purpose>-sa` to simplify audits.
+- Key Vault access policies/role assignments are managed through Terraform; manual portal edits are not allowed.
+
+### Handling of Credentials
+- Rotate secrets when moving between phases or after demos. Track rotation cadence in runbooks under `ops/runbooks`.
+- Never paste secrets into PRs, issues, or ADRs. Reference them indirectly (e.g., "Key Vault secret `trench-sb-conn-prod`") instead.
+- Use sealed terminals or password managers when sharing one-off secrets with collaborators.
+
+### Local Development Hygiene
+- Use `az login` + Workload Identity emulation where possible. Avoid storing Azure service principals locally.
+- Clear `.env` files and Docker volumes before recording demos or sharing screenshots.
+- Ensure unit/integration tests do not rely on real secrets; inject fake values or use mocks.
+
+### Supply Chain Guardrails
+- Container images must be scanned (Trivy or equivalent) before publishing to ACR.
+- Pin Docker base images to digests in production manifests once workloads stabilize.
+- Review dependency updates for known CVEs and document mitigations when accepting temporary risk.
+

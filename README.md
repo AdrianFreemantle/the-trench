@@ -33,9 +33,10 @@ This project is a teaching and capability-building exercise: how to design, prov
 │   └── cluster-addons/            # ArgoCD, ingress, CSI driver, Prometheus, Grafana, OTEL, cloudflared
 │
 ├── apps/                          # All application source code
-│   ├── service-a/                 # Backend service 1
-│   ├── service-b/                 # Backend service 2
-│   └── ui/                        # Next.js frontend
+│   ├── catalog-api/               # Provides catalog data to UI and other services
+│   ├── order-worker/              # Background processing for order side-effects
+│   ├── orders-api/                # Handles carts and orders
+│   └── shop-ui/                   # Browser UI for the whole flow
 │
 ├── ops/                           # Operational and architectural documentation
 │   ├── adr/                       # Architecture Decision Records

@@ -5,6 +5,156 @@
 **Goal:** Establish repo structure, tooling choices, and conventions before writing infra or app code.
 
 Steps:
+## Phase 0: Repository Setup, Conventions, and App Skeletons
+Establish the repository structure, conventions, governance, and minimal service skeletons needed for later infrastructure and CI/CD work.  
+No real business logic yet. Only “hello world” containers to ensure everything builds and runs.
+
+0.1 Create mono-repo
+
+Repository name: `cloud-native-aks-lab` (or `the-trench`).
+
+Top-level folders:
+
+infra/
+  terraform/          # Core Azure infra
+  cluster-addons/     # Add-ons installed after cluster creation
+
+apps/
+  catalog-api/        # Node.js skeleton service
+  orders-api/         # Python skeleton service
+  order-worker/       # Node.js skeleton worker
+  shop-ui/            # Next.js skeleton UI
+
+ops/
+  adr/                # Architecture Decision Records
+  runbooks/           # Operational docs
+  docs/               # Architecture and planning docs
+
+k8s/
+  apps/               # Workload manifests (later)
+  infra/              # Add-ons managed via GitOps (later)
+
+ci/
+  github/             # GitHub Actions pipelines (build-only in early phases)
+
+Add placeholder README files in each top-level folder where necessary.
+
+---
+
+0.2 Define coding and infra conventions
+
+Document in `CONVENTIONS.md`:
+
+- Preferred languages:
+  - Node.js 20 for catalog-api and order-worker
+  - Python 3.12 for orders-api
+  - Next.js with TypeScript for shop-ui
+
+- Container base images:
+  - node:20-slim
+  - python:3.12-slim
+
+- Naming conventions:
+  - Azure: trench-<service>-<resource>-<env>
+  - Kubernetes: <service>-<component>
+
+- Tagging strategy:
+  - owner
+  - environment
+  - cost-center
+  - purpose
+
+---
+
+0.3 ADR Template
+
+Under `ops/adr/` add:
+
+- `template.md`:
+  - Context
+  - Options considered
+  - Decision
+  - Consequences
+
+---
+
+0.4 Initialize Git + GitHub repo
+
+- Initialize git locally.
+- Add top-level `.gitignore`:
+  - Terraform
+  - Node.js
+  - Python
+  - Next.js
+  - Docker-related ignores
+
+- Create initial `README.md`:
+  - Summary of project purpose
+  - Phase structure
+  - High-level architecture goals
+
+Push to GitHub.
+
+---
+
+0.5 Create minimal service skeletons (no logic)
+
+Create **very minimal** app scaffolds so CI, containers, and AKS later have something to deploy.
+
+- catalog-api (Node.js)
+  - index.js: express server with `/healthz`
+  - Dockerfile
+  - package.json
+
+- orders-api (Python)
+  - main.py with FastAPI `/healthz`
+  - requirements.txt
+  - Dockerfile
+
+- order-worker (Node.js)
+  - worker.js with log: “worker running”
+  - Dockerfile
+  - package.json
+
+- shop-ui (Next.js)
+  - Next.js “hello world” page
+  - Dockerfile
+
+- The goal:  
+  - All services build as containers  
+  - Each has a health endpoint  
+  - Nothing more
+
+---
+
+0.6 Local docker-compose for developer sanity
+
+Create `docker-compose.yml` to run all skeleton services together.  
+No databases yet.  
+Just prove containers run.
+
+Services:
+- catalog-api
+- orders-api
+- order-worker
+- shop-ui
+
+Optional:
+- Local Postgres + Mongo to be added in Phase 6
+
+---
+
+0.7 Checkpoint
+
+At the end of Phase 0:
+
+- Repo structure exists
+- Conventions documented
+- ADR system in place
+- GitHub repo initialized
+- All four services exist as “hello world” containers
+- Local docker-compose works
+
 
 0.1 Create a mono-repo (e.g. `cloud-native-aks-lab`):
 - Top-level folders:
