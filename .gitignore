@@ -45,7 +45,6 @@ coverage-final.json
 *.tfstate
 *.tfstate.*
 crash.log
-*.tfvars
 crash.*.log
 *.tfplan
 override.tf

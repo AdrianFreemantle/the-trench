@@ -423,6 +423,80 @@ Steps:
   - Pod can read secret from file
   - No Kubernetes Secret object created
 
+### 2.6 Egress Hardening via UDR and Azure Firewall
+
+**Goal:**
+All outbound traffic from AKS nodes and pods must exit through Azure Firewall’s data-plane public IP. AKS’s default outbound public IP is no longer used.
+
+---
+
+2.6.1 Route table for AKS nodes
+
+Create a route table in `rg-trench-aks-dev`:
+- Name: `rt-aks-nodes-dev`
+- Routes:
+  - Destination: `0.0.0.0/0`
+  - Next hop type: `VirtualAppliance`
+  - Next hop IP: Azure Firewall private IP (from `AzureFirewallSubnet`).
+
+**Outcome:**
+- A route table exists that forces all node and pod egress toward the firewall.
+
+---
+
+2.6.2 Associate route table to `aks-nodes` subnet
+
+Associate `rt-aks-nodes-dev` with the `spoke_aks_nodes` subnet.
+
+**Outcome:**
+- The subnet that hosts AKS nodes is configured to send outbound traffic to the firewall.
+
+---
+
+2.6.3 Switch AKS to userDefinedRouting
+
+Update the AKS cluster resource:
+
+```hcl
+network_profile {
+  network_plugin    = "azure"
+  load_balancer_sku = "standard"
+  outbound_type     = "userDefinedRouting"
+}
+```
+
+**Outcome:**
+- AKS stops using the managed outbound LB IP for SNAT and expects UDR-based egress.
+
+---
+
+2.6.4 Tighten Firewall rules
+
+Remove the temporary "allow all" rule collection and add explicit outbound rules for:
+
+- `AzureKubernetesService` (FQDN tag)
+- `AzureContainerRegistry` (FQDN tag)
+- Any other Internet endpoints required by workloads (for example, external APIs)
+
+Note: Traffic to Key Vault, Postgres Flexible, and Service Bus over Private Endpoints
+remains inside the VNet and is governed by their network ACLs and Private Link
+configuration rather than Azure Firewall egress rules.
+
+**Outcome:**
+- Only explicitly allowed Internet-bound traffic can leave the cluster.
+
+---
+
+2.6.5 Validate egress path
+
+From a test pod inside AKS:
+- Run `curl https://ifconfig.io` (or similar).
+- The visible IP must match the firewall’s data-plane public IP.
+- If you block the firewall’s outbound rules temporarily, pod egress should fail.
+
+**Outcome:**
+- Confirmed that all pod and node egress traverses Azure Firewall.
+
 Checkpoint:
 - ArgoCD running
 - Workload Identity working for at least one test pod
