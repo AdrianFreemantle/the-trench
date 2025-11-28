@@ -31,8 +31,9 @@ locals {
     vnet_spoke = "${local.prefix}-${local.service_groups.vnet}-spoke-${var.environment}"
 
     # Firewall and public IP
-    firewall     = "${local.prefix}-${local.service_groups.fw}-core-${var.environment}"
-    firewall_pip = "${local.prefix}-${local.service_groups.fw}-pip-${var.environment}"
+    firewall         = "${local.prefix}-${local.service_groups.fw}-core-${var.environment}"
+    firewall_pip     = "${local.prefix}-${local.service_groups.fw}-pip-${var.environment}"
+    firewall_mgmt_pip = "${local.prefix}-${local.service_groups.fw}-mgmt-pip-${var.environment}"
 
     # ACR
     acr = "${local.prefix}-${local.service_groups.acr}-core-${var.environment}"
@@ -58,9 +59,10 @@ locals {
   # Subnet names inside VNets
   # Note: AzureFirewallSubnet name is mandatory
   subnets = {
-    hub_firewall          = "AzureFirewallSubnet"
-    hub_shared_services   = "shared-services"
-    spoke_aks_nodes       = "aks-nodes"
+    hub_firewall            = "AzureFirewallSubnet"
+    hub_firewall_mgmt       = "AzureFirewallManagementSubnet"
+    hub_shared_services     = "shared-services"
+    spoke_aks_nodes         = "aks-nodes"
     spoke_private_endpoints = "private-endpoints"
   }
 
