@@ -36,7 +36,8 @@ locals {
     firewall_mgmt_pip = "${local.prefix}-${local.service_groups.fw}-mgmt-pip-${var.environment}"
 
     # ACR
-    acr = "${local.prefix}-${local.service_groups.acr}-core-${var.environment}"
+    # ACR must use an alphanumeric-only name (no dashes), so this deviates from the default pattern.
+    acr = "${local.prefix}${local.service_groups.acr}core${var.environment}"
 
     # Key Vault
     key_vault = "${local.prefix}-${local.service_groups.kv}-core-${var.environment}"

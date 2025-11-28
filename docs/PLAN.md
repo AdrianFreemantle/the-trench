@@ -263,7 +263,7 @@ Document that firewall rules are intentionally loose in Phase 1 and will be tigh
 Deploy ACR into `rg-trench-core-dev`:
 
 - Basic SKU to control cost.
-- Naming consistent with conventions (for example `trenchacrdev`).
+- Naming consistent with conventions (for example `trenchacrcoredev`).
 
 Do not yet wire AKS to ACR via Terraform; that comes in the AKS section.
 
