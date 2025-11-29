@@ -51,3 +51,8 @@ variable "tenant_id" {
   type        = string
   description = "Azure AD tenant ID for this environment"
 }
+
+variable "postgres_admin_password" {
+  type        = string
+  description = "Admin password for the dev PostgreSQL Flexible Server"
+}

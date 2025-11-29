@@ -303,27 +303,31 @@ Provision the minimal PaaS set in Terraform.
 **Key Vault (rg-trench-core-dev)**
 
 - Standard SKU.
-- Soft-delete enabled.
-- Private Endpoint into `private-endpoints` subnet in the spoke VNet.
-- Network ACLs locked to:
-  - Private link only
-  - Trusted Azure services as needed.
+- Soft-delete enabled; purge protection disabled for dev.
+- RBAC-only access (no Key Vault access policies).
+- Public network access disabled; access via Private Endpoint only.
+- Private Endpoint into `private-endpoints` subnet in the spoke VNet, in the same resource group as the vault.
+- Network ACLs configured to allow:
+  - Private Endpoint traffic
+  - Trusted Azure services where required.
 
 **PostgreSQL Flexible Server (rg-trench-data-dev)**
 
-- Dev-grade SKU (smallest viable tier).
+- Dev-grade Burstable compute (smallest viable size), with small storage and auto-grow enabled.
+- Latest supported Postgres major version in the region.
 - Private access only (no public endpoint).
-- Private Endpoint into `private-endpoints` subnet.
-- Server to host schemas for:
-  - `catalog-api`
-  - `orders-api`
+- Private Endpoint into `private-endpoints` subnet, in the same resource group as the server.
+- Single server hosting one database per service:
+  - `catalog`
+  - `orders`
 
 **Service Bus (rg-trench-core-dev)**
 
-- Service Bus namespace.
+- Standard tier Service Bus namespace.
 - Messaging entities:
-  - Topic or queue for `OrderPlaced` (e.g. `orders`).
-- Private Endpoint into `private-endpoints` subnet.
+  - Single queue `orders` for `OrderPlaced` messages.
+- Uses a public endpoint with network/firewall rules; no Private Endpoint (Standard tier does not support Private Link).
+- Initially allow broad access for simplicity; in Phase 5.4 you will tighten Service Bus network rules to allow only the Azure Firewall public IP (and any required admin IPs/VPN ranges).
 
 **Outcome:**
 - All core PaaS resources exist, but no identities, roles, or workloads use them yet.
@@ -336,7 +340,8 @@ Configure Azure Private DNS zones and links for:
 
 - Key Vault `privatelink.vaultcore.azure.net`
 - Postgres Flexible `privatelink.postgres.database.azure.com`
-- Service Bus `privatelink.servicebus.windows.net`
+
+Service Bus uses a public endpoint and does not require a Private DNS zone in this design.
 
 Actions:
 
@@ -364,8 +369,8 @@ By the end of Phase 1:
   - Private AKS cluster (no add-ons)
   - Key Vault (with Private Endpoint)
   - Postgres Flexible (with Private Endpoint)
-  - Service Bus namespace + `OrderPlaced` entity (with Private Endpoint)
-  - Private DNS zones and links for all of the above
+  - Service Bus namespace + `OrderPlaced` entity (Standard tier, public endpoint)
+  - Private DNS zones and links for Key Vault and Postgres
 
 You **do not** yet:
 
@@ -478,9 +483,10 @@ Remove the temporary "allow all" rule collection and add explicit outbound rules
 - `AzureContainerRegistry` (FQDN tag)
 - Any other Internet endpoints required by workloads (for example, external APIs)
 
-Note: Traffic to Key Vault, Postgres Flexible, and Service Bus over Private Endpoints
+Note: Traffic to Key Vault and Postgres Flexible over Private Endpoints
 remains inside the VNet and is governed by their network ACLs and Private Link
-configuration rather than Azure Firewall egress rules.
+configuration rather than Azure Firewall egress rules. Service Bus uses a
+public endpoint and is controlled via its own firewall/network rules and RBAC.
 
 **Outcome:**
 - Only explicitly allowed Internet-bound traffic can leave the cluster.
@@ -625,7 +631,9 @@ Steps:
 - Document clearly that this is lab-only, not production-grade
 
 5.4 Service Bus integration:
-- Ensure Service Bus Private Endpoint and DNS resolution are correct
+- Update Terraform to configure Service Bus namespace network rules so that:
+  - Default action is deny.
+  - Only the Azure Firewall data-plane public IP (and any required admin IPs/VPN ranges) are allowed.
 - Create entities (queues/topics) via Terraform or script
 - Create identity for messaging services and assign RBAC
 
