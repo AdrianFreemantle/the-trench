@@ -163,7 +163,7 @@ At the end of Phase 0:
 ## Phase 1: Core Azure Infrastructure with Terraform
 
 **Goal:** Provision the foundational Azure environment with Terraform: hub–spoke VNets, Firewall, ACR, private AKS, Key Vault, Postgres Flexible, Service Bus, and Private Endpoints.  
-Execution is **manual `terraform apply`** for now; CI/CD for infra comes later.
+Execution is **manual `terraform apply`** for now; infra Terraform automation is introduced in **Phase 7.5**.
 
 ---
 
@@ -173,7 +173,7 @@ Create and initialize `infra/terraform/`:
 
 - Files:
   - `providers.tf`
-  - `backend.tf` (local state for Phase 1)
+  - `backend.tf` (local state for Phase 1; remote backend migration is handled in **Phase 7.7**)
   - `main.tf`
   - `variables.tf`
   - `outputs.tf`
@@ -251,7 +251,7 @@ Deploy Azure Firewall into the hub VNet:
     - Node pool image pulls from ACR / Microsoft endpoints.
   - Everything else denied by default.
 
-Document that firewall rules are intentionally loose in Phase 1 and will be tightened in later phases.
+Document that firewall rules are intentionally loose in Phase 1 and will be tightened in **Phase 2.6** (egress hardening via UDR and Azure Firewall).
 
 **Outcome:**
 - Egress from the AKS spoke will be forced through Firewall (once UDRs are configured in later phases).
@@ -264,6 +264,7 @@ Deploy ACR into `rg-trench-core-dev`:
 
 - Basic SKU to control cost.
 - Naming consistent with conventions (for example `trenchacrcoredev`).
+- For Phase 1, keep ACR admin user enabled and public network access allowed for simplicity; in **Phase 7.6** you will disable the admin user and rely on federated credentials / role assignments only.
 
 Do not yet wire AKS to ACR via Terraform; that comes in the AKS section.
 
@@ -292,7 +293,7 @@ Also:
 
 **Outcome:**
 - A private AKS cluster exists and can pull images from ACR (once CI pushes them).
-- `az aks get-credentials` works from a machine with network access (via VPN/Bastion in a later phase).
+- `az aks get-credentials` works from a machine with network access via the admin access path you provision in **Phase 2.1** (for example, Bastion, VPN, or a jump host in the hub VNet).
 
 ---
 
@@ -388,24 +389,31 @@ Those belong in **Phase 2** (cluster add-ons + identity plumbing) and later phas
 Steps:
 
 2.1 Cluster access:
-- Configure local kubectl access via:
-  - Az CLI (`az aks get-credentials` with private endpoint access and/or Bastion/VPN)
+- Provision a small Linux jump-host VM in the hub VNet:
+  - Use a small, cost-conscious SKU (for example `Standard_B1s` or `Standard_B2s`).
+  - Restrict SSH access via NSG rules to your trusted admin IP ranges.
+  - Use cloud-init to install Azure CLI and `kubectl` so the VM is ready for cluster admin tasks after `terraform apply`.
+- Configure kubectl access via:
+  - SSH into the jump-host VM.
+  - Run `az aks get-credentials` from the jump host to obtain cluster credentials.
 - Validate you can:
   - `kubectl get nodes`
   - `kubectl get pods -A`
 
-2.2 Add-on deployment approach:
-- Decide:
-  - Use Terraform + Helm provider
-  - Or use ArgoCD to manage add-on Helm charts
-- For initial simplicity, you can:
-  - Install ArgoCD via Terraform/Helm
-  - Then let ArgoCD manage the rest
+2.2 Add-on deployment approach (GitOps with ArgoCD):
+- Adopt ArgoCD GitOps as the source of truth for all cluster add-ons and application manifests.
+- Document this decision in an ADR under `ops/adr/`, clarifying that Terraform bootstraps ArgoCD and ArgoCD manages in-cluster resources.
+- Define repo structure for ArgoCD Applications, for example:
+  - `k8s/infra-addons/` for CSI driver, Prometheus, Grafana, cloudflared, and other cluster add-ons.
+  - `k8s/apps/` for application workloads.
+- Treat Terraform as responsible only for Azure infrastructure and ArgoCD bootstrap, not for managing individual add-on Helm releases.
 
 2.3 Install ArgoCD:
-- Namespace (e.g. `argocd`)
-- Deploy ArgoCD using Helm or manifests
-- Configure ArgoCD to sync from your Git repo
+- Create the `argocd` namespace in the AKS cluster.
+- Use Terraform with the Helm provider to install the ArgoCD chart into that namespace.
+- Configure ArgoCD (via Helm values and/or a bootstrap `Application`) to:
+  - Point at your Git repo.
+  - Auto-sync the `k8s/infra-addons/` and `k8s/apps/` paths defined in 2.2.
 
 2.4 Workload Identity plumbing:
 - Confirm AKS OIDC + Workload Identity enabled
@@ -754,6 +762,23 @@ Steps:
   - HPA manifests for key services
 - Validate rollbacks via:
   - ArgoCD rollback or Git revert
+
+7.5 Infra Terraform automation:
+- Create a GitHub Actions workflow (or equivalent) to:
+  - Run `terraform fmt`, `terraform validate`, and `terraform plan` on pull requests affecting `infra/terraform/`.
+  - Run `terraform apply` for approved changes to the dev environment.
+- This replaces the manual `terraform apply` approach used in Phase 1.
+
+7.6 ACR hardening:
+- Disable the ACR admin user.
+- Ensure only Entra / workload identities (including CI via federated credentials) and RBAC roles (such as `AcrPull` / `AcrPush`) are used for registry access.
+- Optionally tighten ACR network rules for non-lab environments (for example, restricting access to specific egress paths or private endpoints if introduced later).
+
+7.7 Terraform remote backend migration:
+- Create an Azure Storage account and container dedicated to Terraform state for this lab.
+- Update `backend.tf` to use the `azurerm` backend, pointing at that storage account/container.
+- Update CI workflows (7.5) to initialize and use the remote backend.
+- Decommission the local backend file used in Phase 1 once the remote backend is live and validated.
 
 Checkpoint:
 - A single commit to main triggers:
