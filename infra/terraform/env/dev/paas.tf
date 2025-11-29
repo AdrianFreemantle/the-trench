@@ -121,3 +121,72 @@ resource "azurerm_private_endpoint" "pg" {
 
   tags = module.conventions.tags
 }
+
+###############################################
+# Private DNS zones and links
+###############################################
+resource "azurerm_private_dns_zone" "kv" {
+  name                = module.conventions.dns_zones.kv
+  resource_group_name = azurerm_resource_group.core.name
+
+  tags = module.conventions.tags
+}
+
+resource "azurerm_private_dns_zone" "pg" {
+  name                = module.conventions.dns_zones.pg
+  resource_group_name = azurerm_resource_group.core.name
+
+  tags = module.conventions.tags
+}
+
+resource "azurerm_private_dns_zone_virtual_network_link" "kv_hub" {
+  name                  = "kv-hub-link"
+  resource_group_name   = azurerm_resource_group.core.name
+  private_dns_zone_name = azurerm_private_dns_zone.kv.name
+  virtual_network_id    = azurerm_virtual_network.hub.id
+  registration_enabled  = false
+}
+
+resource "azurerm_private_dns_zone_virtual_network_link" "kv_spoke" {
+  name                  = "kv-spoke-link"
+  resource_group_name   = azurerm_resource_group.core.name
+  private_dns_zone_name = azurerm_private_dns_zone.kv.name
+  virtual_network_id    = azurerm_virtual_network.spoke.id
+  registration_enabled  = false
+}
+
+resource "azurerm_private_dns_zone_virtual_network_link" "pg_hub" {
+  name                  = "pg-hub-link"
+  resource_group_name   = azurerm_resource_group.core.name
+  private_dns_zone_name = azurerm_private_dns_zone.pg.name
+  virtual_network_id    = azurerm_virtual_network.hub.id
+  registration_enabled  = false
+}
+
+resource "azurerm_private_dns_zone_virtual_network_link" "pg_spoke" {
+  name                  = "pg-spoke-link"
+  resource_group_name   = azurerm_resource_group.core.name
+  private_dns_zone_name = azurerm_private_dns_zone.pg.name
+  virtual_network_id    = azurerm_virtual_network.spoke.id
+  registration_enabled  = false
+}
+
+resource "azurerm_private_dns_zone_group" "kv" {
+  name                = "kv-dns-zone-group"
+  private_endpoint_id = azurerm_private_endpoint.kv.id
+
+  private_dns_zone_configs {
+    name               = "kv-dns-config"
+    private_dns_zone_id = azurerm_private_dns_zone.kv.id
+  }
+}
+
+resource "azurerm_private_dns_zone_group" "pg" {
+  name                = "pg-dns-zone-group"
+  private_endpoint_id = azurerm_private_endpoint.pg.id
+
+  private_dns_zone_configs {
+    name                = "pg-dns-config"
+    private_dns_zone_id = azurerm_private_dns_zone.pg.id
+  }
+}
