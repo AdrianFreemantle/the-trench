@@ -82,7 +82,6 @@ Example PR checklist:
 - [ ] Tests passing locally.
 - [ ] Terraform validated and plan reviewed (if infra changed).
 - [ ] Kubernetes manifests linted / rendered (if k8s changed).
-- [ ] Breaking changes documented in `ops/docs` or ADRs if needed.
 
 Avoid huge PRs. If it feels too large, split it into smaller, sequential PRs.
 
@@ -104,8 +103,6 @@ Rules:
   - Use the shared naming and tagging conventions.
   - Have variables for environment specific values.
   - Avoid hard-coding secrets.
-
-Changes to Terraform that alter critical resources (VNets, AKS, Firewall) should have an ADR entry in `ops/adr`.
 
 ---
 
@@ -145,25 +142,7 @@ If an application change affects public API contracts, note it in the PR and upd
 
 ---
 
-## 8. ADRs (Architecture Decision Records)
-
-Location:
-- `ops/adr`
-
-Rules:
-- Any non-trivial architectural decision that will be hard to reverse must have an ADR.
-- Use one ADR per decision.
-- Reference ADR numbers in PR descriptions when relevant.
-
-ADR content should be short and to the point:
-- Context
-- Options considered
-- Decision
-- Consequences
-
----
-
-## 9. CI and Pipelines
+## 8. CI and Pipelines
 
 Location:
 - `ci/github` (eventually `.github/workflows` in the repo root)
@@ -179,7 +158,7 @@ CI failures block merges. Do not bypass them.
 
 ---
 
-## 10. Style and Quality
+## 9. Style and Quality
 
 - Follow the language specific linters and formatters (for example `eslint` for TypeScript, `black` for Python if used).
 - Do not leave commented out code in the main branches.
@@ -188,11 +167,11 @@ CI failures block merges. Do not bypass them.
 
 ---
 
-## 11. Security and Secrets
+## 10. Security and Secrets
 
 - Never commit secrets, keys, connection strings, or tokens.
 - For local development, use `.env` files that are ignored by Git.
 - In the cluster, all secrets must come from Key Vault via CSI or direct SDK usage with Workload Identity.
 
-If there is any doubt about security impact, treat the change as security sensitive and document the reasoning in the PR and, if needed, an ADR.
+If there is any doubt about security impact, treat the change as security sensitive and document the reasoning in the PR
 

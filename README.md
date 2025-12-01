@@ -39,7 +39,6 @@ This project is a teaching and capability-building exercise: how to design, prov
 │   └── shop-ui/                   # Browser UI for the whole flow
 │
 ├── ops/                           # Operational and architectural documentation
-│   ├── adr/                       # Architecture Decision Records
 │   ├── runbooks/                  # Operational runbooks, troubleshooting, SRE-style docs
 │   └── docs/                      # Design notes, diagrams, planning material
 │
@@ -55,9 +54,9 @@ This project is a teaching and capability-building exercise: how to design, prov
 
 The project proceeds in well-defined phases. Each phase builds on the previous one.
 
-- ✅ **Phase 0:** Repo structure, conventions, tooling, ADR templates
-- ✅ **Phase 1:** Terraform provisioning of Azure core infrastructure (hub-spoke VNets, Firewall, ACR, private AKS, Key Vault, Postgres, Service Bus)
-- 🚧 **Phase 2:** Cluster add-ons, Workload Identity, Key Vault CSI, egress hardening via UDR and Azure Firewall
+- **Phase 0:** Repo structure, conventions, tooling
+- **Phase 1:** Terraform provisioning of Azure core infrastructure (hub-spoke VNets, Firewall, ACR, private AKS, Key Vault, Postgres, Service Bus)
+- *Phase 2:** Cluster add-ons, Workload Identity, Key Vault CSI, egress hardening via UDR and Azure Firewall
 - **Phase 3:** Edge ingress via Cloudflare Tunnel + NGINX + TLS
 - **Phase 4:** Observability stack (Prometheus, Grafana, OTEL, Azure Monitor)
 - **Phase 5:** Data and messaging integration (Postgres, Mongo, Service Bus with Workload Identity)
@@ -73,7 +72,6 @@ Each phase has a clear checkpoint defining what must work before moving on.
 - No Kubernetes Secrets for sensitive values; all secrets come from Key Vault.
 - All workloads authenticate to Azure via Workload Identity.
 - Only Cloudflare Tunnel provides ingress; no public load balancers.
-- Every significant decision is documented as an ADR.
 - GitOps is the source of truth for cluster workloads.
 
 ## Who This Is For
@@ -81,8 +79,6 @@ Each phase has a clear checkpoint defining what must work before moving on.
 Engineers and architects who want hands-on, realistic experience designing and operating cloud-native systems on Azure. Familiarity with Azure is assumed; AKS experience is not.
 
 ## Status
-
-**Current Phase:** Phase 2 (Cluster Add-ons and Security Plumbing) - in progress
 
 **Completed:**
 - Phase 0: Repository structure and conventions ✅
@@ -95,8 +91,8 @@ Engineers and architects who want hands-on, realistic experience designing and o
   - Jump host for cluster access
 
 **In Progress:**
-- Phase 2.1: Jump host provisioned and validated ✅
-- Phase 2.2: GitOps approach documented (ArgoCD deferred to Phase 7) ✅
-- Phase 2.3: Workload Identity plumbing 🚧
-- Phase 2.4: Key Vault CSI Driver
-- Phase 2.5: Egress hardening validation
+- Phase 2 (Cluster Add-ons and Security Plumbing) 
+  - Phase 2.1: Jump host provisioned and validated ✅
+  - Phase 2.2: Workload Identity plumbing 🚧
+  - Phase 2.3: Key Vault CSI Driver
+  - Phase 2.4: Egress hardening validation

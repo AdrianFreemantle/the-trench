@@ -29,7 +29,6 @@ apps/
   shop-ui/            # Next.js skeleton UI
 
 ops/
-  adr/                # Architecture Decision Records
   runbooks/           # Operational docs
   docs/               # Architecture and planning docs
 
@@ -69,19 +68,7 @@ Document in `CONVENTIONS.md`:
 
 ---
 
-0.3 ADR Template
-
-Under `ops/adr/` add:
-
-- `template.md`:
-  - Context
-  - Options considered
-  - Decision
-  - Consequences
-
----
-
-0.4 Initialize Git + GitHub repo
+0.3 Initialize Git + GitHub repo
 
 - Initialize git locally.
 - Add top-level `.gitignore`:
@@ -100,7 +87,7 @@ Push to GitHub.
 
 ---
 
-0.5 Create minimal service skeletons (no logic)
+0.4 Create minimal service skeletons (no logic)
 
 Create **very minimal** app scaffolds so CI, containers, and AKS later have something to deploy.
 
@@ -130,7 +117,7 @@ Create **very minimal** app scaffolds so CI, containers, and AKS later have some
 
 ---
 
-0.6 Local docker-compose for developer sanity
+0.5 Local docker-compose for developer sanity
 
 Create `docker-compose.yml` to run all skeleton services together.  
 No databases yet.  
@@ -147,13 +134,12 @@ Optional:
 
 ---
 
-0.7 Checkpoint
+0.6 Checkpoint
 
 At the end of Phase 0:
 
 - Repo structure exists
 - Conventions documented
-- ADR system in place
 - GitHub repo initialized
 - All four services exist as “hello world” containers
 - Local docker-compose works
@@ -251,7 +237,7 @@ Deploy Azure Firewall into the hub VNet:
     - Node pool image pulls from ACR / Microsoft endpoints.
   - Everything else denied by default.
 
-Document that firewall rules are intentionally loose in Phase 1 and will be tightened in **Phase 2.5** (egress hardening via UDR and Azure Firewall).
+Document that firewall rules are intentionally loose in Phase 1 and will be tightened in **Phase 2.4** (egress hardening via UDR and Azure Firewall).
 
 **Outcome:**
 - Egress from the AKS spoke will be forced through Firewall (once UDRs are configured in later phases).
@@ -402,15 +388,7 @@ Steps:
   - `kubectl get nodes`
   - `kubectl get pods -A`
 
-2.2 Add-on deployment approach (GitOps with ArgoCD):
-- Adopt ArgoCD GitOps as the source of truth for all cluster add-ons and application manifests.
-- Document this decision in an ADR under `ops/adr/`, clarifying that Terraform bootstraps ArgoCD and ArgoCD manages in-cluster resources.
-- Define repo structure for ArgoCD Applications, for example:
-  - `k8s/infra-addons/` for CSI driver, Prometheus, Grafana, cloudflared, and other cluster add-ons.
-  - `k8s/apps/` for application workloads.
-- Treat Terraform as responsible only for Azure infrastructure and ArgoCD bootstrap, not for managing individual add-on Helm releases.
-
-2.3 Workload Identity plumbing:
+2.2 Workload Identity plumbing:
 - Confirm AKS OIDC + Workload Identity enabled
 - Create one or more Entra app registrations / workload identities for:
   - Postgres access
@@ -422,7 +400,7 @@ Steps:
   - Service Bus (Contributor/Owner/Specific roles)
 - Document full path from pod → Service Account → Federated Credential → Entra → role
 
-2.4 Key Vault CSI Driver:
+2.3 Key Vault CSI Driver:
 - Install Secrets Store CSI driver + Key Vault provider into cluster
 - Configure a sample Pod that:
   - Uses Workload Identity
@@ -430,16 +408,16 @@ Steps:
   - Pod can read secret from file
   - No Kubernetes Secret object created
 
-2.5 Egress Hardening via UDR and Azure Firewall
+2.4 Egress Hardening via UDR and Azure Firewall
 
 **Goal:**
 All outbound traffic from AKS nodes and pods must exit through Azure Firewall's data-plane public IP. AKS's default outbound public IP is no longer used.
 
-Note: Due to free-tier public IP and vCPU constraints in this lab, steps 2.5.1–2.5.3 are implemented during the initial cluster bring-up rather than deferred to a later hardening pass.
+Note: Due to free-tier public IP and vCPU constraints in this lab, steps 2.4.1–2.4.3 are implemented during the initial cluster bring-up rather than deferred to a later hardening pass.
 
 ---
 
-2.5.1 Route table for AKS nodes
+2.4.1 Route table for AKS nodes
 
 Create a route table in `rg-trench-aks-dev`:
 - Name: `rt-aks-nodes-dev`
@@ -453,7 +431,7 @@ Create a route table in `rg-trench-aks-dev`:
 
 ---
 
-2.5.2 Associate route table to `aks-nodes` subnet
+2.4.2 Associate route table to `aks-nodes` subnet
 
 Associate `rt-aks-nodes-dev` with the `spoke_aks_nodes` subnet.
 
@@ -462,7 +440,7 @@ Associate `rt-aks-nodes-dev` with the `spoke_aks_nodes` subnet.
 
 ---
 
-2.5.3 Switch AKS to userDefinedRouting
+2.4.3 Switch AKS to userDefinedRouting
 
 Update the AKS cluster resource:
 
@@ -479,7 +457,7 @@ network_profile {
 
 ---
 
-2.5.4 Tighten Firewall rules
+2.4.4 Tighten Firewall rules
 
 Remove the temporary "allow all" rule collection and add explicit outbound rules for:
 
@@ -497,7 +475,7 @@ public endpoint and is controlled via its own firewall/network rules and RBAC.
 
 ---
 
-2.5.5 Validate egress path
+2.4.5 Validate egress path
 
 From a test pod inside AKS:
 - Run `curl https://ifconfig.io` (or similar).
