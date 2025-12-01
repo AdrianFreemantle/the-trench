@@ -10,8 +10,8 @@ resource "azurerm_key_vault" "core" {
 
   tenant_id = var.tenant_id
 
-  soft_delete_retention_days   = 7
-  purge_protection_enabled     = false
+  soft_delete_retention_days    = 7
+  purge_protection_enabled      = false
   public_network_access_enabled = false
 
   # RBAC-only access model (access policies not used)
@@ -32,6 +32,7 @@ resource "azurerm_postgresql_flexible_server" "core" {
   name                   = module.conventions.names.postgres
   location               = var.location
   resource_group_name    = azurerm_resource_group.data.name
+  zone                   = "1"
   administrator_login    = "pgadmin"
   administrator_password = var.postgres_admin_password
 
@@ -39,9 +40,8 @@ resource "azurerm_postgresql_flexible_server" "core" {
 
   public_network_access_enabled = false
 
-  storage_mb            = 32768
-  storage_tier          = "P4"
-  backup_retention_days = 7
+  storage_mb = 32768
+  backup_retention_days        = 7
   geo_redundant_backup_enabled = false
 
   version = "16"
@@ -102,6 +102,11 @@ resource "azurerm_private_endpoint" "kv" {
     is_manual_connection           = false
   }
 
+  private_dns_zone_group {
+    name                 = "kv-dns-zone-group"
+    private_dns_zone_ids = [azurerm_private_dns_zone.kv.id]
+  }
+
   tags = module.conventions.tags
 }
 
@@ -117,6 +122,11 @@ resource "azurerm_private_endpoint" "pg" {
     private_connection_resource_id = azurerm_postgresql_flexible_server.core.id
     subresource_names              = ["postgresqlServer"]
     is_manual_connection           = false
+  }
+
+  private_dns_zone_group {
+    name                 = "pg-dns-zone-group"
+    private_dns_zone_ids = [azurerm_private_dns_zone.pg.id]
   }
 
   tags = module.conventions.tags
@@ -169,24 +179,4 @@ resource "azurerm_private_dns_zone_virtual_network_link" "pg_spoke" {
   private_dns_zone_name = azurerm_private_dns_zone.pg.name
   virtual_network_id    = azurerm_virtual_network.spoke.id
   registration_enabled  = false
-}
-
-resource "azurerm_private_dns_zone_group" "kv" {
-  name                = "kv-dns-zone-group"
-  private_endpoint_id = azurerm_private_endpoint.kv.id
-
-  private_dns_zone_configs {
-    name               = "kv-dns-config"
-    private_dns_zone_id = azurerm_private_dns_zone.kv.id
-  }
-}
-
-resource "azurerm_private_dns_zone_group" "pg" {
-  name                = "pg-dns-zone-group"
-  private_endpoint_id = azurerm_private_endpoint.pg.id
-
-  private_dns_zone_configs {
-    name                = "pg-dns-config"
-    private_dns_zone_id = azurerm_private_dns_zone.pg.id
-  }
 }

@@ -56,3 +56,19 @@ variable "postgres_admin_password" {
   type        = string
   description = "Admin password for the dev PostgreSQL Flexible Server"
 }
+
+variable "jump_host_admin_username" {
+  type        = string
+  description = "Admin username for the jump-host VM"
+  default     = "azureuser"
+}
+
+variable "jump_host_admin_ssh_public_key" {
+  type        = string
+  description = "SSH public key for the jump-host VM admin user"
+}
+
+variable "jump_host_allowed_source_ip" {
+  type        = string
+  description = "CIDR of the trusted admin IP allowed to SSH to the jump-host VM"
+}

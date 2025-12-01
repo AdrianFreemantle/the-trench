@@ -1,2 +1,5 @@
-subscription_id = "b52ee4b5-ce29-4c7d-93b2-55ac9c541ece"
-tenant_id       = "eb2e2c60-d901-41f8-ae94-7442103d0482"
+subscription_id                = "b52ee4b5-ce29-4c7d-93b2-55ac9c541ece"
+tenant_id                      = "eb2e2c60-d901-41f8-ae94-7442103d0482"
+jump_host_allowed_source_ip    = "105.186.140.20/32"
+jump_host_admin_username       = "trenchadmin"
+jump_host_admin_ssh_public_key = "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIK1HzDdOC4SmBpO5qAIeLTcGu4ZLtJMrDMHmgcIN/4qr trench-jump-host"

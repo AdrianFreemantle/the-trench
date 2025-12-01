@@ -19,7 +19,7 @@ resource "azurerm_container_registry" "acr" {
   location            = var.location
 
   sku           = "Basic"
-  admin_enabled = true   # Temporary for Phase 1 only
+  admin_enabled = true # Temporary for Phase 1 only
 
   public_network_access_enabled = true
 

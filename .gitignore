@@ -11,6 +11,7 @@ Thumbs.db
 .env.*
 .venv/
 venv/
+keys/
 
 # Python
 __pycache__/

@@ -1,4 +1,59 @@
 ###############################################
+# Private DNS Zone for AKS API Server
+#
+# Required so both hub VNet (jump host) and spoke VNet
+# can resolve the private AKS API server FQDN.
+###############################################
+resource "azurerm_private_dns_zone" "aks" {
+  name                = "privatelink.${var.location}.azmk8s.io"
+  resource_group_name = azurerm_resource_group.aks.name
+
+  tags = module.conventions.tags
+}
+
+resource "azurerm_private_dns_zone_virtual_network_link" "aks_hub" {
+  name                  = "aks-hub-link"
+  resource_group_name   = azurerm_resource_group.aks.name
+  private_dns_zone_name = azurerm_private_dns_zone.aks.name
+  virtual_network_id    = azurerm_virtual_network.hub.id
+  registration_enabled  = false
+}
+
+resource "azurerm_private_dns_zone_virtual_network_link" "aks_spoke" {
+  name                  = "aks-spoke-link"
+  resource_group_name   = azurerm_resource_group.aks.name
+  private_dns_zone_name = azurerm_private_dns_zone.aks.name
+  virtual_network_id    = azurerm_virtual_network.spoke.id
+  registration_enabled  = false
+}
+
+###############################################
+# User Assigned Identity for AKS
+#
+# Required when using a custom private DNS zone.
+# AKS needs permissions to manage DNS records.
+###############################################
+resource "azurerm_user_assigned_identity" "aks" {
+  name                = "${module.conventions.names.aks_cluster}-identity"
+  location            = var.location
+  resource_group_name = azurerm_resource_group.aks.name
+
+  tags = module.conventions.tags
+}
+
+resource "azurerm_role_assignment" "aks_dns_contributor" {
+  scope                = azurerm_private_dns_zone.aks.id
+  role_definition_name = "Private DNS Zone Contributor"
+  principal_id         = azurerm_user_assigned_identity.aks.principal_id
+}
+
+resource "azurerm_role_assignment" "aks_network_contributor" {
+  scope                = azurerm_virtual_network.spoke.id
+  role_definition_name = "Network Contributor"
+  principal_id         = azurerm_user_assigned_identity.aks.principal_id
+}
+
+###############################################
 # AKS Cluster - dev
 #
 # Implements PLAN step 1.6:
@@ -21,12 +76,14 @@ resource "azurerm_kubernetes_cluster" "aks" {
 
   ###########################################
   # Identity
-  # System assigned managed identity is used for:
-  # - pulling from ACR (AcrPull role)
-  # - future role assignments to Key Vault, etc.
+  # User assigned identity is required when using
+  # a custom private DNS zone. It has permissions for:
+  # - Private DNS Zone Contributor on AKS DNS zone
+  # - Network Contributor on spoke VNet
   ###########################################
   identity {
-    type = "SystemAssigned"
+    type         = "UserAssigned"
+    identity_ids = [azurerm_user_assigned_identity.aks.id]
   }
 
   ###########################################
@@ -34,7 +91,8 @@ resource "azurerm_kubernetes_cluster" "aks" {
   # - Private only API endpoint
   # - OIDC issuer required for workload identity
   ###########################################
-  private_cluster_enabled   = true
+  private_cluster_enabled = true
+  private_dns_zone_id     = azurerm_private_dns_zone.aks.id
   oidc_issuer_enabled       = true
   workload_identity_enabled = true
 
@@ -46,6 +104,7 @@ resource "azurerm_kubernetes_cluster" "aks" {
   network_profile {
     network_plugin    = "azure"
     load_balancer_sku = "standard"
+    outbound_type     = "userDefinedRouting"
   }
 
   ###########################################
@@ -55,13 +114,22 @@ resource "azurerm_kubernetes_cluster" "aks" {
   ###########################################
   default_node_pool {
     name           = "system"
-    vm_size        = "Standard_D2s_v5"
+    vm_size        = "Standard_D2ls_v5"
     node_count     = 1
     vnet_subnet_id = azurerm_subnet.spoke_aks_nodes.id
     type           = "VirtualMachineScaleSets"
   }
 
   tags = module.conventions.tags
+
+  # Dependencies:
+  # - UDR must be associated with subnet before AKS can use userDefinedRouting
+  # - Role assignments must exist before AKS can use the custom private DNS zone
+  depends_on = [
+    azurerm_subnet_route_table_association.aks_nodes,
+    azurerm_role_assignment.aks_dns_contributor,
+    azurerm_role_assignment.aks_network_contributor
+  ]
 }
 
 ###############################################
@@ -70,19 +138,18 @@ resource "azurerm_kubernetes_cluster" "aks" {
 # Dedicated pool for application workloads.
 # System services stay on the default "system" pool.
 ###############################################
-resource "azurerm_kubernetes_cluster_node_pool" "user" {
-  name                  = "user"
-  kubernetes_cluster_id = azurerm_kubernetes_cluster.aks.id
-
-  vm_size        = "Standard_D2s_v5"
-  node_count     = 1
-  vnet_subnet_id = azurerm_subnet.spoke_aks_nodes.id
-
-  mode = "User"
-
-  tags = module.conventions.tags
-}
-
+# resource "azurerm_kubernetes_cluster_node_pool" "user" {
+#   name                  = "user"
+#   kubernetes_cluster_id = azurerm_kubernetes_cluster.aks.id
+#
+#   vm_size        = "Standard_D1_v2"
+#   node_count     = 1
+#   vnet_subnet_id = azurerm_subnet.spoke_aks_nodes.id
+#
+#   mode = "User"
+#
+#   tags = module.conventions.tags
+# }
 ###############################################
 # ACR Pull Permissions for AKS
 #
@@ -92,5 +159,5 @@ resource "azurerm_kubernetes_cluster_node_pool" "user" {
 resource "azurerm_role_assignment" "aks_acr_pull" {
   scope                = azurerm_container_registry.acr.id
   role_definition_name = "AcrPull"
-  principal_id         = azurerm_kubernetes_cluster.aks.identity[0].principal_id
+  principal_id         = azurerm_kubernetes_cluster.aks.kubelet_identity[0].object_id
 }

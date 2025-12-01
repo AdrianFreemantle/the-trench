@@ -119,6 +119,26 @@ resource "azurerm_virtual_network_peering" "spoke_to_hub" {
   ]
 }
 
+resource "azurerm_route_table" "aks_nodes" {
+  name                = "rt-aks-nodes-dev"
+  location            = var.location
+  resource_group_name = azurerm_resource_group.aks.name
+
+  route {
+    name                   = "default-to-firewall"
+    address_prefix         = "0.0.0.0/0"
+    next_hop_type          = "VirtualAppliance"
+    next_hop_in_ip_address = azurerm_firewall.hub.ip_configuration[0].private_ip_address
+  }
+
+  tags = module.conventions.tags
+}
+
+resource "azurerm_subnet_route_table_association" "aks_nodes" {
+  subnet_id      = azurerm_subnet.spoke_aks_nodes.id
+  route_table_id = azurerm_route_table.aks_nodes.id
+}
+
 ###############################################
 # Outputs
 # Useful for debugging, cross module references,

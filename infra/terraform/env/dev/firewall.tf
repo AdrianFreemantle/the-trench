@@ -15,8 +15,9 @@ resource "azurerm_public_ip" "firewall_pip" {
   tags = module.conventions.tags
 }
 
+# Management public IP required for Azure Firewall Basic SKU
 resource "azurerm_public_ip" "firewall_mgmt_pip" {
-  name                = module.conventions.names.firewall_mgmt_pip
+  name                = "${module.conventions.names.firewall}-mgmt-pip"
   resource_group_name = azurerm_resource_group.core.name
   location            = var.location
 

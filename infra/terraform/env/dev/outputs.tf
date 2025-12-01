@@ -28,3 +28,18 @@ output "resource_group_names" {
     aks  = azurerm_resource_group.aks.name
   }
 }
+
+output "jump_host_public_ip" {
+  description = "Public IP address of the jump-host VM for SSH access"
+  value       = azurerm_public_ip.jump_host.ip_address
+}
+
+output "firewall_public_ip" {
+  description = "Azure Firewall data-plane public IP (egress IP for AKS)"
+  value       = azurerm_public_ip.firewall_pip.ip_address
+}
+
+output "aks_cluster_name" {
+  description = "AKS cluster name for az aks get-credentials"
+  value       = azurerm_kubernetes_cluster.aks.name
+}

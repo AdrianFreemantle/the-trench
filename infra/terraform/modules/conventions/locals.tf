@@ -14,6 +14,7 @@ locals {
     sb   = "sb"
     dns  = "dns"
     pe   = "pe"
+    jh   = "jh"
   }
 
   # Standard resource group names
@@ -55,6 +56,10 @@ locals {
     pe_kv = "${local.prefix}-${local.service_groups.pe}-kv-${var.environment}"
     pe_pg = "${local.prefix}-${local.service_groups.pe}-pg-${var.environment}"
     pe_sb = "${local.prefix}-${local.service_groups.pe}-sb-${var.environment}"
+    jump_host_vm  = "${local.prefix}-${local.service_groups.jh}-vm-${var.environment}"
+    jump_host_pip = "${local.prefix}-${local.service_groups.jh}-pip-${var.environment}"
+    jump_host_nic = "${local.prefix}-${local.service_groups.jh}-nic-${var.environment}"
+    jump_host_nsg = "${local.prefix}-${local.service_groups.jh}-nsg-${var.environment}"
   }
 
   # Subnet names inside VNets

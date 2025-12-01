@@ -236,7 +236,6 @@ Provision hub and spoke VNets using Terraform.
 
 **Outcome:**
 - Baseline network topology in place for private AKS and Private Endpoints.
-
 ---
 
 ### 1.4 Azure Firewall (Minimal Initial Policy)
@@ -244,7 +243,8 @@ Provision hub and spoke VNets using Terraform.
 Deploy Azure Firewall into the hub VNet:
 
 - Place firewall in `AzureFirewallSubnet`.
-- Assign a public IP (for now).
+- Assign a single public IP for the firewall data plane.
+  - Note: During implementation we hit the regional public IP quota in this subscription, which forced us to drop the separate management public IP from the initial design. Using only the data-plane IP is sufficient for this lab’s goals. In a less constrained environment you could reintroduce a dedicated management IP later for forced tunnelling or a more advanced management topology.
 - Create a **minimal** rule set:
   - Network rules / application rules sufficient for:
     - AKS control plane connectivity.
@@ -283,9 +283,11 @@ Provision AKS in `rg-trench-aks-dev` with:
 - RBAC enabled.
 - OIDC issuer enabled.
 - Workload Identity enabled.
-- Two node pools:
+- Two node pools (design intent):
   - `system` pool (small SKU, system workloads only).
   - `user` pool (for app workloads later).
+
+Note: Due to AKS restricted-SKU rules for very small VM sizes and the tight free-tier vCPU quota in this subscription, the initial implementation temporarily runs with a **single** `system` node pool only. The `user` pool Terraform resource is commented out and will be reintroduced in a later hardening phase once the subscription is upgraded and larger SKUs are available without hitting quota limits.
 
 Also:
 
@@ -440,6 +442,8 @@ Steps:
 
 **Goal:**
 All outbound traffic from AKS nodes and pods must exit through Azure Firewall’s data-plane public IP. AKS’s default outbound public IP is no longer used.
+
+Note: Due to free-tier public IP and vCPU constraints in this lab, steps 2.6.1–2.6.3 are implemented during the initial cluster bring-up rather than deferred to a later hardening pass.
 
 ---
 
@@ -820,3 +824,13 @@ Examples (each can be its own mini-phase):
   - Loki for logs
 - Switch OTEL exports to those
 - Compare with Azure Monitor-based setup
+
+8.6 Split AKS system and user node pools (post free-tier upgrade):
+- Re-enable the dedicated `user` node pool in Terraform with an appropriate, supported VM SKU (for example `Standard_D2ls_v5` or similar) once the subscription has sufficient vCPU quota.
+- Keep the `system` pool small and stable for control-plane and platform add-ons; direct application workloads to the `user` pool using:
+  - Node labels / `nodeSelector` / `nodeAffinity`.
+  - Taints and tolerations if you want to keep system and user workloads strongly separated.
+- Update documentation to reflect the new scheduling model and any resource requests/limits tuned for the new pool layout.
+- Validate that:
+  - System components remain on the `system` pool.
+  - Application pods land on the `user` pool by default.
