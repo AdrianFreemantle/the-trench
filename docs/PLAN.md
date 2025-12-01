@@ -404,9 +404,6 @@ Steps:
 - Install Secrets Store CSI driver + Key Vault provider into cluster
 - Configure a sample Pod that:
   - Uses Workload Identity
-- Confirm:
-  - Pod can read secret from file
-  - No Kubernetes Secret object created
 
 2.4 Egress Hardening via UDR and Azure Firewall
 

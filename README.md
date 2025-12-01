@@ -56,13 +56,13 @@ The project proceeds in well-defined phases. Each phase builds on the previous o
 
 - **Phase 0:** Repo structure, conventions, tooling
 - **Phase 1:** Terraform provisioning of Azure core infrastructure (hub-spoke VNets, Firewall, ACR, private AKS, Key Vault, Postgres, Service Bus)
-- *Phase 2:** Cluster add-ons, Workload Identity, Key Vault CSI, egress hardening via UDR and Azure Firewall
-- **Phase 3:** Edge ingress via Cloudflare Tunnel + NGINX + TLS
+- **Phase 2:** Cluster add-ons, Workload Identity, Key Vault CSI, egress hardening via UDR and Azure Firewall
+- **Phase 3:** Cloudflare DNS setup
 - **Phase 4:** Observability stack (Prometheus, Grafana, OTEL, Azure Monitor)
 - **Phase 5:** Data and messaging integration (Postgres, Mongo, Service Bus with Workload Identity)
 - **Phase 6:** Application services and Next.js UI
 - **Phase 7:** CI/CD with GitHub Actions + GitOps with ArgoCD (ArgoCD installation and bootstrap)
-- **Phase 8:** Hardening and advanced topics (rate limiting, service mesh, Dapr, node pool splitting)
+- **Phase 8:** Edge ingress (Cloudflare Tunnel, NGINX, TLS) and advanced topics (service mesh, Dapr, node pool splitting)
 
 Each phase has a clear checkpoint defining what must work before moving on.
 

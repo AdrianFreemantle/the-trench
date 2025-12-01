@@ -1,0 +1,74 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: tinyshop
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: orders-api
+  namespace: tinyshop
+  annotations:
+    azure.workload.identity/client-id: '<REPLACE_WITH_ORDERS_API_CLIENT_ID>'
+  labels:
+    azure.workload.identity/use: 'true'
+---
+apiVersion: secrets-store.csi.x-k8s.io/v1
+kind: SecretProviderClass
+metadata:
+  name: kv-orders-api
+  namespace: tinyshop
+spec:
+  provider: azure
+  parameters:
+    usePodIdentity: 'false'
+    useVMManagedIdentity: 'false'
+    clientID: '<REPLACE_WITH_ORDERS_API_CLIENT_ID>'
+    keyvaultName: 'trench-kv-core-dev'
+    cloudName: 'AzurePublicCloud'
+    tenantId: '<REPLACE_WITH_TENANT_ID>'
+    objects: |
+      array:
+        - |
+          objectName: dev-sample-secret
+          objectType: secret
+          objectVersion: ""
+---
+apiVersion: v1
+kind: Pod
+metadata:
+  name: kv-csi-test
+  namespace: tinyshop
+  labels:
+    azure.workload.identity/use: 'true'
+spec:
+  serviceAccountName: orders-api
+  containers:
+    - name: tester
+      image: mcr.microsoft.com/azure-cli:latest
+      command:
+        - /bin/sh
+        - -c
+      args:
+        - |
+          echo "Mounted secrets:"; ls -R /mnt/secrets-store;
+          echo "Secret value:"; cat /mnt/secrets-store/dev-sample-secret || true;
+          sleep 3600
+      resources:
+        requests:
+          cpu: '50m'
+          memory: '64Mi'
+        limits:
+          cpu: '200m'
+          memory: '256Mi'
+      volumeMounts:
+        - name: secrets-store
+          mountPath: '/mnt/secrets-store'
+          readOnly: true
+  volumes:
+    - name: secrets-store
+      csi:
+        driver: secrets-store.csi.k8s.io
+        readOnly: true
+        volumeAttributes:
+          secretProviderClass: kv-orders-api

@@ -86,6 +86,16 @@ resource "azurerm_kubernetes_cluster" "aks" {
   }
 
   ###########################################
+  # Key Vault secrets provider (CSI driver)
+  # Enables the azure-keyvault-secrets-provider
+  # add-on for mounting Key Vault secrets via CSI.
+  ###########################################
+  key_vault_secrets_provider {
+    secret_rotation_enabled  = true
+    secret_rotation_interval = "2h"
+  }
+
+  ###########################################
   # API server and workload identity
   # - Private only API endpoint
   # - OIDC issuer required for workload identity
