@@ -40,7 +40,7 @@ resource "azurerm_postgresql_flexible_server" "core" {
 
   public_network_access_enabled = false
 
-  storage_mb = 32768
+  storage_mb                   = 32768
   backup_retention_days        = 7
   geo_redundant_backup_enabled = false
 

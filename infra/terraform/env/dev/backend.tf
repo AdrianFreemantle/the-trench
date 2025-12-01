@@ -1,19 +1,19 @@
 ###############################################
 # Terraform backend configuration
 #
-# Phase 1 uses a local backend. This avoids:
-# - creating a storage account too early
-# - dealing with remote state locking before infra exists
+# Uses a local backend to avoid:
+# - creating a storage account before infra exists
+# - dealing with remote state locking during bootstrapping
 #
 # State is stored outside the env/ directory so that:
 # - it does not clutter the module
 # - it can be gitignored globally
-# - future migration to Azure Storage backend is easier
+# - migration to an Azure Storage backend is simpler
 #
 # NOTE:
 # Do not manually move or edit this file once Terraform
-# has initialized. A remote backend will be introduced
-# in a later phase.
+# has initialized. Switching backend types requires a
+# deliberate state migration.
 ###############################################
 terraform {
   backend "local" {

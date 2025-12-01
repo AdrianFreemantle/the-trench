@@ -4,7 +4,7 @@
 # in the conventions module. Useful for:
 # - sanity checking naming conventions
 # - verifying environment suffixes
-# - interactive debugging during early phases
+# - interactive debugging during initial setup
 ###############################################
 output "naming_preview" {
   value = module.conventions.names
@@ -12,8 +12,7 @@ output "naming_preview" {
 
 ###############################################
 # resource_group_names
-# Returns the three primary resource groups created
-# in Phase 1:
+# Returns the three primary resource groups for this environment:
 # - core: shared infra (ACR, KV, SB, Firewall, hub VNet)
 # - data: stateful services (Postgres, PE for data)
 # - aks: AKS cluster and spoke VNet

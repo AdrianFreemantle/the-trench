@@ -54,14 +54,13 @@ resource "azurerm_role_assignment" "aks_network_contributor" {
 }
 
 ###############################################
-# AKS Cluster - dev
+# AKS cluster
 #
-# Implements PLAN step 1.6:
-# - Private AKS cluster in rg-trench-aks-dev
+# Private, RBAC-enabled AKS cluster:
 # - Attached to spoke VNet aks-nodes subnet
-# - RBAC + OIDC issuer + Workload Identity
-# - Separate system and user node pools
-# - Integrated with ACR via role assignment
+# - OIDC issuer + Workload Identity enabled
+# - Uses Azure CNI in the spoke VNet
+# - Pulls images from ACR via role assignment
 ###############################################
 resource "azurerm_kubernetes_cluster" "aks" {
   name                = module.conventions.names.aks_cluster
@@ -91,8 +90,8 @@ resource "azurerm_kubernetes_cluster" "aks" {
   # - Private only API endpoint
   # - OIDC issuer required for workload identity
   ###########################################
-  private_cluster_enabled = true
-  private_dns_zone_id     = azurerm_private_dns_zone.aks.id
+  private_cluster_enabled   = true
+  private_dns_zone_id       = azurerm_private_dns_zone.aks.id
   oidc_issuer_enabled       = true
   workload_identity_enabled = true
 

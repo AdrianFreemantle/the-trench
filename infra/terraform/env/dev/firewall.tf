@@ -30,8 +30,7 @@ resource "azurerm_public_ip" "firewall_mgmt_pip" {
 ###############################################
 # Azure Firewall in the hub VNet
 # Deployed into AzureFirewallSubnet. This will become the
-# central egress control point once UDRs are configured
-# in a later phase.
+# central egress control point once UDRs are configured.
 ###############################################
 resource "azurerm_firewall" "hub" {
   name                = module.conventions.names.firewall

@@ -1,16 +1,16 @@
 ###############################################
 # Azure Container Registry (ACR)
 #
-# Phase 1.5 objective:
-# Stand up a minimal ACR instance so we can push
-# images from CI and manually during development.
+# Minimal ACR instance used to push images from CI
+# and manual development workflows.
 #
 # Notes:
 # - Basic SKU keeps cost low.
 # - Public network access remains enabled until
 #   private endpoints and firewall routing exist.
 # - Admin user is temporarily enabled for ease of
-#   testing and will be disabled in a later phase.
+#   testing and should be disabled once federated
+#   CI authentication is in place.
 # - No retention or hardening rules applied yet.
 ###############################################
 resource "azurerm_container_registry" "acr" {
@@ -19,7 +19,7 @@ resource "azurerm_container_registry" "acr" {
   location            = var.location
 
   sku           = "Basic"
-  admin_enabled = true # Temporary for Phase 1 only
+  admin_enabled = true # Temporary; disable once federated CI auth is in place
 
   public_network_access_enabled = true
 
