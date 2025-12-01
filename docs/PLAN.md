@@ -251,7 +251,7 @@ Deploy Azure Firewall into the hub VNet:
     - Node pool image pulls from ACR / Microsoft endpoints.
   - Everything else denied by default.
 
-Document that firewall rules are intentionally loose in Phase 1 and will be tightened in **Phase 2.6** (egress hardening via UDR and Azure Firewall).
+Document that firewall rules are intentionally loose in Phase 1 and will be tightened in **Phase 2.5** (egress hardening via UDR and Azure Firewall).
 
 **Outcome:**
 - Egress from the AKS spoke will be forced through Firewall (once UDRs are configured in later phases).
@@ -410,14 +410,7 @@ Steps:
   - `k8s/apps/` for application workloads.
 - Treat Terraform as responsible only for Azure infrastructure and ArgoCD bootstrap, not for managing individual add-on Helm releases.
 
-2.3 Install ArgoCD:
-- Create the `argocd` namespace in the AKS cluster.
-- Use Terraform with the Helm provider to install the ArgoCD chart into that namespace.
-- Configure ArgoCD (via Helm values and/or a bootstrap `Application`) to:
-  - Point at your Git repo.
-  - Auto-sync the `k8s/infra-addons/` and `k8s/apps/` paths defined in 2.2.
-
-2.4 Workload Identity plumbing:
+2.3 Workload Identity plumbing:
 - Confirm AKS OIDC + Workload Identity enabled
 - Create one or more Entra app registrations / workload identities for:
   - Postgres access
@@ -429,25 +422,24 @@ Steps:
   - Service Bus (Contributor/Owner/Specific roles)
 - Document full path from pod → Service Account → Federated Credential → Entra → role
 
-2.5 Key Vault CSI Driver:
+2.4 Key Vault CSI Driver:
 - Install Secrets Store CSI driver + Key Vault provider into cluster
 - Configure a sample Pod that:
   - Uses Workload Identity
-  - Mounts a Key Vault secret via CSI volume
 - Confirm:
   - Pod can read secret from file
   - No Kubernetes Secret object created
 
-### 2.6 Egress Hardening via UDR and Azure Firewall
+2.5 Egress Hardening via UDR and Azure Firewall
 
 **Goal:**
-All outbound traffic from AKS nodes and pods must exit through Azure Firewall’s data-plane public IP. AKS’s default outbound public IP is no longer used.
+All outbound traffic from AKS nodes and pods must exit through Azure Firewall's data-plane public IP. AKS's default outbound public IP is no longer used.
 
-Note: Due to free-tier public IP and vCPU constraints in this lab, steps 2.6.1–2.6.3 are implemented during the initial cluster bring-up rather than deferred to a later hardening pass.
+Note: Due to free-tier public IP and vCPU constraints in this lab, steps 2.5.1–2.5.3 are implemented during the initial cluster bring-up rather than deferred to a later hardening pass.
 
 ---
 
-2.6.1 Route table for AKS nodes
+2.5.1 Route table for AKS nodes
 
 Create a route table in `rg-trench-aks-dev`:
 - Name: `rt-aks-nodes-dev`
@@ -461,7 +453,7 @@ Create a route table in `rg-trench-aks-dev`:
 
 ---
 
-2.6.2 Associate route table to `aks-nodes` subnet
+2.5.2 Associate route table to `aks-nodes` subnet
 
 Associate `rt-aks-nodes-dev` with the `spoke_aks_nodes` subnet.
 
@@ -470,7 +462,7 @@ Associate `rt-aks-nodes-dev` with the `spoke_aks_nodes` subnet.
 
 ---
 
-2.6.3 Switch AKS to userDefinedRouting
+2.5.3 Switch AKS to userDefinedRouting
 
 Update the AKS cluster resource:
 
@@ -487,7 +479,7 @@ network_profile {
 
 ---
 
-2.6.4 Tighten Firewall rules
+2.5.4 Tighten Firewall rules
 
 Remove the temporary "allow all" rule collection and add explicit outbound rules for:
 
@@ -505,7 +497,7 @@ public endpoint and is controlled via its own firewall/network rules and RBAC.
 
 ---
 
-2.6.5 Validate egress path
+2.5.5 Validate egress path
 
 From a test pod inside AKS:
 - Run `curl https://ifconfig.io` (or similar).
@@ -516,9 +508,9 @@ From a test pod inside AKS:
 - Confirmed that all pod and node egress traverses Azure Firewall.
 
 Checkpoint:
-- ArgoCD running
 - Workload Identity working for at least one test pod
 - Key Vault CSI driver working
+- Egress from AKS nodes and pods successfully forced through Azure Firewall
 
 ---
 
@@ -531,7 +523,7 @@ Steps:
 3.1 Cloudflare DNS:
 - Register / select domain
 - Configure DNS zone in Cloudflare
-- Point domain’s NS records at Cloudflare
+- Point domain's NS records at Cloudflare
 
 3.2 Cloudflare Tunnel (cloudflared):
 - Create a Cloudflare Tunnel manually first:
@@ -548,11 +540,11 @@ Steps:
   - Internal Service (ClusterIP or internal LoadBalancer depending on tunnel setup)
 - Configure Ingress resource for a dummy app (e.g. simple echo service)
 
-3.4 TLS with Let’s Encrypt and DNS-01:
+3.4 TLS with Let's Encrypt and DNS-01:
 - Install cert-manager
 - Configure DNS-01 solver for Cloudflare:
   - Use Key Vault / CSI to store Cloudflare API token if needed
-- Create Ingress with TLS using Let’s Encrypt:
+- Create Ingress with TLS using Let's Encrypt:
   - Validate certificates issued successfully
   - Set Cloudflare to Full (Strict) mode
 
@@ -740,6 +732,10 @@ Steps:
   - Push images to ACR
 
 7.2 GitOps with ArgoCD:
+- Install ArgoCD into the AKS cluster (for example via Terraform Helm provider or Helm CLI):
+  - Create the `argocd` namespace in the cluster.
+  - Install the ArgoCD chart into that namespace.
+  - Expose ArgoCD in a way appropriate for the environment (for example, internal LoadBalancer in dev, Cloudflare/Ingress in later phases).
 - Structure `k8s/` manifests/Helm charts:
   - `k8s/apps/` for app deployments
   - `k8s/infra-addons/` for Prometheus, Grafana, OTEL, cloudflared, etc.

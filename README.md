@@ -55,16 +55,15 @@ This project is a teaching and capability-building exercise: how to design, prov
 
 The project proceeds in well-defined phases. Each phase builds on the previous one.
 
-1. **Phase 0:** Repo structure, conventions, tooling, ADR templates
-2. **Phase 1:** Terraform provisioning of Azure core infrastructure
-3. **Phase 2:** Cluster add-ons, Workload Identity, Key Vault CSI
-4. **Phase 3:** Ingress via Cloudflare Tunnel + NGINX + TLS
-5. **Phase 4:** Observability stack (Prometheus, Grafana, OTEL)
-6. **Phase 5:** Data and messaging (Postgres, Mongo, Service Bus)
-7. **Phase 6:** Application services and Next.js UI
-8. **Phase 7:** CI/CD with GitHub Actions + GitOps with ArgoCD
-9. **Phase 8:** Hardening and advanced topics
-10. **Phase 9:** Documentation and teaching material
+- ✅ **Phase 0:** Repo structure, conventions, tooling, ADR templates
+- ✅ **Phase 1:** Terraform provisioning of Azure core infrastructure (hub-spoke VNets, Firewall, ACR, private AKS, Key Vault, Postgres, Service Bus)
+- 🚧 **Phase 2:** Cluster add-ons, Workload Identity, Key Vault CSI, egress hardening via UDR and Azure Firewall
+- **Phase 3:** Edge ingress via Cloudflare Tunnel + NGINX + TLS
+- **Phase 4:** Observability stack (Prometheus, Grafana, OTEL, Azure Monitor)
+- **Phase 5:** Data and messaging integration (Postgres, Mongo, Service Bus with Workload Identity)
+- **Phase 6:** Application services and Next.js UI
+- **Phase 7:** CI/CD with GitHub Actions + GitOps with ArgoCD (ArgoCD installation and bootstrap)
+- **Phase 8:** Hardening and advanced topics (rate limiting, service mesh, Dapr, node pool splitting)
 
 Each phase has a clear checkpoint defining what must work before moving on.
 
@@ -83,4 +82,21 @@ Engineers and architects who want hands-on, realistic experience designing and o
 
 ## Status
 
-We are currently on **Phase 0**: repository setup, conventions, and initial documentation.
+**Current Phase:** Phase 2 (Cluster Add-ons and Security Plumbing) - in progress
+
+**Completed:**
+- Phase 0: Repository structure and conventions ✅
+- Phase 1: Azure core infrastructure via Terraform ✅
+  - Hub-spoke VNets with peering
+  - Azure Firewall with UDR for egress control
+  - Private AKS cluster with Workload Identity enabled
+  - ACR, Key Vault, Postgres Flexible Server, Service Bus
+  - Private DNS zones and Private Endpoints
+  - Jump host for cluster access
+
+**In Progress:**
+- Phase 2.1: Jump host provisioned and validated ✅
+- Phase 2.2: GitOps approach documented (ArgoCD deferred to Phase 7) ✅
+- Phase 2.3: Workload Identity plumbing 🚧
+- Phase 2.4: Key Vault CSI Driver
+- Phase 2.5: Egress hardening validation
