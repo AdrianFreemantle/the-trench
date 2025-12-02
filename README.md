@@ -56,13 +56,13 @@ The project proceeds in well-defined phases. Each phase builds on the previous o
 
 - **Phase 0:** Repo structure, conventions, tooling
 - **Phase 1:** Terraform provisioning of Azure core infrastructure (hub-spoke VNets, Firewall, ACR, private AKS, Key Vault, Postgres, Service Bus)
-- **Phase 2:** Cluster add-ons, Workload Identity, Key Vault CSI, egress hardening via UDR and Azure Firewall
-- **Phase 3:** Cloudflare DNS setup
-- **Phase 4:** Observability stack (Prometheus, Grafana, OTEL, Azure Monitor)
-- **Phase 5:** Data and messaging integration (Postgres, Mongo, Service Bus with Workload Identity)
-- **Phase 6:** Application services and Next.js UI
-- **Phase 7:** CI/CD with GitHub Actions + GitOps with ArgoCD (ArgoCD installation and bootstrap)
-- **Phase 8:** Edge ingress (Cloudflare Tunnel, NGINX, TLS) and advanced topics (service mesh, Dapr, node pool splitting)
+- **Phase 2:** Cluster add-ons, Workload Identity, Key Vault CSI, egress hardening, Log Analytics, Service Bus network rules, remote backend storage (all Terraform)
+- **Phase 3:** Observability stack (Prometheus, Grafana, OTEL) via Kubernetes manifests
+- **Phase 4:** Data and messaging integration (Postgres, Mongo, Service Bus with Workload Identity)
+- **Phase 5:** Ingress, TLS, and first demo app (NGINX Ingress, cert-manager, Let's Encrypt)
+- **Phase 6:** Application services (TinyShop backend + Next.js UI)
+- **Phase 7:** CI/CD with GitHub Actions + GitOps with ArgoCD
+- **Phase 8:** Cloudflare Tunnel, WAF, and advanced topics (service mesh, Dapr, KEDA/event-driven autoscaling, node pool splitting)
 
 Each phase has a clear checkpoint defining what must work before moving on.
 
@@ -91,8 +91,9 @@ Engineers and architects who want hands-on, realistic experience designing and o
   - Jump host for cluster access
 
 **In Progress:**
-- Phase 2 (Cluster Add-ons and Security Plumbing) 
+- Phase 2 (Cluster Add-ons and Security Plumbing)
   - Phase 2.1: Jump host provisioned and validated ✅
-  - Phase 2.2: Workload Identity plumbing 🚧
-  - Phase 2.3: Key Vault CSI Driver
-  - Phase 2.4: Egress hardening validation
+  - Phase 2.2: Workload Identity plumbing ✅
+  - Phase 2.3: Key Vault CSI Driver (AKS add-on enabled) ✅
+  - Phase 2.4: Egress hardening ✅
+  - Phase 2.5: Azure platform additions (Log Analytics, SB network rules, backend storage) 🚧

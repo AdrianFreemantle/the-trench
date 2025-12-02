@@ -316,7 +316,7 @@ Provision the minimal PaaS set in Terraform.
 - Messaging entities:
   - Single queue `orders` for `OrderPlaced` messages.
 - Uses a public endpoint with network/firewall rules; no Private Endpoint (Standard tier does not support Private Link).
-- Initially allow broad access for simplicity; in Phase 5.4 you will tighten Service Bus network rules to allow only the Azure Firewall public IP (and any required admin IPs/VPN ranges).
+- Initially allow broad access for simplicity; in **Phase 2.5.2** you will tighten Service Bus network rules to allow only the Azure Firewall public IP (and any required admin IPs/VPN ranges).
 
 **Outcome:**
 - All core PaaS resources exist, but no identities, roles, or workloads use them yet.
@@ -482,148 +482,236 @@ From a test pod inside AKS:
 **Outcome:**
 - Confirmed that all pod and node egress traverses Azure Firewall.
 
-Checkpoint:
-- Workload Identity working for at least one test pod
-- Key Vault CSI driver working
-- Egress from AKS nodes and pods successfully forced through Azure Firewall
+---
+
+2.5 Azure Platform Additions (Terraform)
+
+Complete all remaining Azure infrastructure via Terraform before moving to Kubernetes manifests.
 
 ---
 
-## Phase 3: Edge, Cloudflare, and Ingress
+2.5.1 Log Analytics and Container Insights
 
-**Goal:** Expose the cluster securely via Cloudflare, using Cloudflare Tunnel and TLS.
+- Create a Log Analytics workspace in `rg-trench-core-dev`.
+- Enable AKS Container Insights via the `oms_agent` block in the AKS resource.
+- Configure diagnostic settings to send AKS control-plane logs to Log Analytics.
 
-Steps:
-
-3.1 Cloudflare DNS:
-- Register / select domain
-- Configure DNS zone in Cloudflare
-- Point domain's NS records at Cloudflare
-
-3.2 Cloudflare Tunnel (cloudflared):
-- Create a Cloudflare Tunnel manually first:
-  - Install `cloudflared` locally and establish a tunnel
-  - Map tunnel to a test HTTP service to validate end-to-end
-- Then migrate tunnel into AKS:
-  - Deploy `cloudflared` Deployment in a `infra-cloudflare` namespace
-  - Configure it to connect to the same tunnel
-  - Use a Service + Ingress in AKS as origin
-
-3.3 Ingress Controller:
-- Install NGINX Ingress Controller (or similar) in AKS:
-  - System node pool
-  - Internal Service (ClusterIP or internal LoadBalancer depending on tunnel setup)
-- Configure Ingress resource for a dummy app (e.g. simple echo service)
-
-3.4 TLS with Let's Encrypt and DNS-01:
-- Install cert-manager
-- Configure DNS-01 solver for Cloudflare:
-  - Use Key Vault / CSI to store Cloudflare API token if needed
-- Create Ingress with TLS using Let's Encrypt:
-  - Validate certificates issued successfully
-  - Set Cloudflare to Full (Strict) mode
-
-3.5 WAF and rate limiting:
-- On appropriate Cloudflare plan:
-  - Enable basic WAF rules for the domain
-  - Configure rate limiting for specific paths (e.g. login endpoints)
-- Document what is covered at Cloudflare vs in-cluster
-
-Checkpoint:
-- A test app is reachable via HTTPS over your domain:
-  - Browser → Cloudflare → Tunnel → AKS Ingress → Pod
+**Outcome:**
+- Azure-side telemetry is flowing; you can view container logs and metrics in Azure Portal.
 
 ---
 
-## Phase 4: Observability Stack (Initial)
+2.5.2 Service Bus network rules
 
-**Goal:** Set up Prometheus, Grafana, OTEL, and basic alerting with exports to Azure Monitor.
+- Update Service Bus namespace to:
+  - Set default action to `Deny`.
+  - Allow only the Azure Firewall data-plane public IP.
+  - Allow any required admin IPs or VPN ranges.
+
+**Outcome:**
+- Service Bus is no longer open to the internet; only cluster egress (via Firewall) can reach it.
+
+---
+
+2.5.3 Remote backend storage account
+
+- Create an Azure Storage account and container for Terraform state.
+- Do **not** migrate to the remote backend yet; that happens in Phase 7.7.
+- This ensures the storage account exists and is ready when you automate Terraform.
+
+**Outcome:**
+- Storage account provisioned; local backend still in use for now.
+
+---
+
+Checkpoint (Phase 2):
+- Jump host provisioned and cluster accessible
+- Workload Identity plumbing complete
+- Key Vault CSI driver add-on enabled
+- Egress from AKS forced through Azure Firewall
+- Log Analytics + Container Insights enabled
+- Service Bus network-locked
+- Remote backend storage account exists
+
+After Phase 2, all Azure Terraform is complete. A single `terraform apply` provisions the entire platform.
+
+---
+
+## Phase 3: Observability Stack
+
+**Goal:** Deploy in-cluster observability (Prometheus, Grafana, OTEL) via Kubernetes manifests.
 
 Steps:
 
-4.1 Prometheus + Grafana:
-- Deploy Prometheus (likely kube-prometheus-stack) via ArgoCD/Helm
+### 3.1 Prometheus + Grafana
+
+- Deploy kube-prometheus-stack via Helm:
+  - Prometheus for metrics collection
+  - Grafana for dashboards
 - Configure:
-  - Scraping of Kubernetes components
-  - Scraping of app namespaces
-- Deploy Grafana:
-  - Connect to Prometheus data source
-  - Import basic Kubernetes dashboards
+  - Scraping of Kubernetes components (kubelet, apiserver, etc.)
+  - Scraping of app namespaces (ServiceMonitors)
+- Import standard Kubernetes dashboards into Grafana.
 
-4.2 OTEL Collector:
-- Deploy OpenTelemetry Collector in its own namespace:
-  - Receivers for OTLP (from apps)
-  - Exporters to:
-    - Azure Monitor / App Insights / Log Analytics
-- Define basic pipelines:
-  - Traces: OTLP → Azure
-  - Logs: OTLP or stdout scraping → Azure (or leave logs only in Azure Monitor at first)
-  - Metrics: OTLP → Prometheus or directly to Azure if needed
+---
 
-4.3 App instrumentation baseline:
-- Prepare libraries / patterns for:
-  - Structured logging
+### 3.2 OTEL Collector
+
+- Deploy OpenTelemetry Collector in its own namespace.
+- Configure receivers:
+  - OTLP (gRPC and HTTP) for app telemetry
+- Configure exporters:
+  - Azure Monitor / Application Insights (traces, logs)
+  - Prometheus (metrics, if not using direct scrape)
+- Define pipelines:
+  - Traces: OTLP → Azure Monitor
+  - Metrics: OTLP → Prometheus or Azure
+  - Logs: stdout scraping or OTLP → Azure
+
+---
+
+### 3.3 App instrumentation baseline
+
+- Prepare libraries and patterns for services to use:
+  - Structured logging (JSON to stdout)
   - OTEL tracer initialization
-  - Metrics (counter, histogram) for HTTP requests
+  - Metrics (counters, histograms) for HTTP requests
+- Document how services should integrate.
 
-4.4 Alerting:
+---
+
+### 3.4 Alerting
+
 - Configure Prometheus alert rules:
   - High error rate
   - High latency
   - CPU/memory saturation
 - Configure Alertmanager or Grafana alerts:
-  - Email alerts to admin address
-
-Checkpoint:
-- You can see:
-  - Cluster metrics in Grafana
-  - At least one app’s metrics
-  - Logs and/or traces in Azure Monitor
-  - Test alerts hitting your email
+  - Email notifications to admin address
 
 ---
 
-## Phase 5: Data & Messaging Integration
+Checkpoint (Phase 3):
+- Grafana accessible with cluster metrics dashboards
+- OTEL Collector running and ready to receive app telemetry
+- Alerts configured and tested
 
-**Goal:** Wire Postgres, Mongo, and Service Bus into the cluster with Workload Identity + Key Vault CSI.
+---
+
+## Phase 4: Data & Messaging Integration
+
+**Goal:** Wire Postgres, MongoDB, and Service Bus into the cluster using Workload Identity.
+
+Note: Service Bus network rules were already applied in Phase 2.5.2.
 
 Steps:
 
-5.1 Postgres integration:
-- Configure Postgres Flexible for:
-  - AAD auth (if used) or MI-based connection
-  - Private Endpoint confirmed
-- Create initial schema (manual or migration):
-  - For simplicity, initial migrations can be run via a CLI tool / script
+### 4.1 Postgres integration
 
-5.2 Service identity for Postgres:
-- Create Entra identity for backend services needing DB access
-- Assign appropriate roles for Postgres
-- Configure Kubernetes ServiceAccount + Workload Identity binding
+- Validate Postgres Flexible Server connectivity from cluster:
+  - Private Endpoint resolution works
+  - Connection succeeds using Workload Identity / AAD auth (or password from Key Vault if MI not configured for Postgres)
+- Create initial schema (manual or via migration script):
+  - `catalog` database schema
+  - `orders` database schema
 
-5.3 MongoDB in AKS:
-- Deploy MongoDB as:
-  - StatefulSet
-  - Headless Service
-  - PVCs using appropriate Storage Class
-- Minimal replica set for learning
-- Document clearly that this is lab-only, not production-grade
+---
 
-5.4 Service Bus integration:
-- Update Terraform to configure Service Bus namespace network rules so that:
-  - Default action is deny.
-  - Only the Azure Firewall data-plane public IP (and any required admin IPs/VPN ranges) are allowed.
-- Create entities (queues/topics) via Terraform or script
-- Create identity for messaging services and assign RBAC
+### 4.2 Service identity for Postgres
 
-5.5 Test workloads:
-- Create small test pods / scripts that:
-  - Connect to Postgres via MI
-  - Connect to Mongo via internal service
+- Configure Kubernetes ServiceAccounts for services needing DB access.
+- Bind ServiceAccounts to the federated credentials created in Phase 2.2.
+- Validate a test pod can authenticate to Postgres using Workload Identity.
+
+---
+
+### 4.3 MongoDB in AKS
+
+- Deploy MongoDB as a StatefulSet:
+  - Headless Service for stable network identity
+  - PVCs using the default or a custom Storage Class
+- Minimal single-node or replica set configuration for learning.
+- Document clearly: this is lab-only, not production-grade.
+
+---
+
+### 4.4 Service Bus integration
+
+- Validate Service Bus connectivity from cluster:
+  - Egress through Firewall reaches the namespace.
+  - Network rules (from Phase 2.5.2) allow cluster traffic.
+- Bind ServiceAccounts to Service Bus RBAC roles (created in Phase 2.2).
+- Test sending and receiving messages from the `orders` queue.
+
+---
+
+### 4.5 Test workloads
+
+- Create small test pods or scripts that:
+  - Connect to Postgres via Workload Identity
+  - Connect to MongoDB via internal Service
   - Send/receive messages from Service Bus
+- Validate all connections work without static secrets.
 
-Checkpoint:
-- You have a working data/messaging layer accessible from the cluster without static secrets.
+---
+
+Checkpoint (Phase 4):
+- Postgres, MongoDB, and Service Bus all reachable from pods
+- No static secrets; all auth via Workload Identity or Key Vault CSI
+- Test workloads successfully exercise the data/messaging layer
+
+---
+
+## Phase 5: Ingress, TLS, and First Demo App
+
+**Goal:** Create the first browser-to-pod HTTP path with TLS, using a minimal demo app.
+
+Steps:
+
+### 5.1 DNS
+
+- Register or select a domain for the project.
+- Configure a DNS zone (Cloudflare or other provider).
+- Create an A or CNAME record for a demo hostname (e.g. `demo.dev.yourdomain.com`).
+- Optionally provision the Cloudflare zone via Terraform.
+
+---
+
+### 5.2 Ingress Controller
+
+- Install NGINX Ingress Controller via Helm:
+  - Deploy to system node pool
+  - Use an internal Service (ClusterIP or internal LoadBalancer)
+- Validate the controller pods are running.
+
+---
+
+### 5.3 TLS with cert-manager
+
+- Install cert-manager via Helm.
+- Configure a ClusterIssuer for Let's Encrypt:
+  - Use HTTP-01 solver for simplicity, or
+  - Use DNS-01 with your DNS provider's API.
+- Create a Certificate resource for the demo hostname.
+- Validate the certificate is issued successfully.
+
+---
+
+### 5.4 Tiny demo app
+
+- Deploy a simple echo or health-check app:
+  - Deployment + Service
+  - Ingress resource with TLS enabled
+- Validate end-to-end:
+  - Browser → DNS → HTTPS → Ingress → Pod
+  - Certificate is valid and trusted
+
+---
+
+Checkpoint (Phase 5):
+- NGINX Ingress Controller running
+- TLS certificate issued via Let's Encrypt
+- Demo app reachable over HTTPS from a browser
 
 ---
 
@@ -633,7 +721,8 @@ Checkpoint:
 
 Steps:
 
-6.1 Domain definition:
+### 6.1 Domain definition
+
 - Define a simple business/domain scenario:
   - Enough to justify:
     - User accounts (via External ID)
@@ -642,7 +731,10 @@ Steps:
     - Use of both Postgres and Mongo
 - Document this domain at a high level (no full DDD, just enough structure).
 
-6.2 Backend services:
+---
+
+### 6.2 Backend services
+
 - Implement 2–3 small services, e.g.:
   - `api-gateway` or BFF for UI
   - `orders-service` (Postgres)
@@ -656,14 +748,20 @@ Steps:
     - Retries
     - Circuit-breaking (via library or custom pattern)
 
-6.3 UI (Next.js) in AKS – first iteration:
+---
+
+### 6.3 UI (Next.js) in AKS – first iteration
+
 - Create a basic Next.js app:
   - Server-side rendered pages
   - Auth flows using Entra External ID
 - Containerize and deploy to AKS behind Ingress:
   - Integrate with backend services
 
-6.4 Entra External ID integration:
+---
+
+### 6.4 Entra External ID integration
+
 - Configure B2C / External ID tenant
 - Register apps:
   - UI
@@ -674,7 +772,10 @@ Steps:
   - Google social login
 - Validate tokens and scopes in backend
 
-6.5 Observability integration:
+---
+
+### 6.5 Observability integration
+
 - Confirm traces flow through:
   - UI → API → downstream services → DB / Service Bus
 - Add Grafana dashboards for:
@@ -695,7 +796,7 @@ Checkpoint:
 
 Steps:
 
-7.1 GitHub Actions – CI:
+### 7.1 GitHub Actions – CI
 - Create workflows to:
   - Build each service image
   - Run unit tests
@@ -706,7 +807,9 @@ Steps:
   - Scan images with Trivy
   - Push images to ACR
 
-7.2 GitOps with ArgoCD:
+---
+
+### 7.2 GitOps with ArgoCD
 - Install ArgoCD into the AKS cluster (for example via Terraform Helm provider or Helm CLI):
   - Create the `argocd` namespace in the cluster.
   - Install the ArgoCD chart into that namespace.
@@ -720,7 +823,9 @@ Steps:
   - Watch main branches for changes
   - Auto-sync or manual-sync depending on desired workflow
 
-7.3 Promotion flow:
+---
+
+### 7.3 Promotion flow
 - Define branch / tag strategy:
   - e.g. `main` for dev environment
 - Define how:
@@ -730,7 +835,9 @@ Steps:
     - Manifest update (tag change)
     - ArgoCD sync and rollout
 
-7.4 Deployment safety:
+---
+
+### 7.4 Deployment safety
 - Add:
   - Readiness/liveness probes
   - Rolling update strategies
@@ -738,19 +845,26 @@ Steps:
 - Validate rollbacks via:
   - ArgoCD rollback or Git revert
 
-7.5 Infra Terraform automation:
+---
+
+### 7.5 Infra Terraform automation
 - Create a GitHub Actions workflow (or equivalent) to:
   - Run `terraform fmt`, `terraform validate`, and `terraform plan` on pull requests affecting `infra/terraform/`.
   - Run `terraform apply` for approved changes to the dev environment.
 - This replaces the manual `terraform apply` approach used in Phase 1.
 
-7.6 ACR hardening:
+---
+
+### 7.6 ACR hardening
 - Disable the ACR admin user.
 - Ensure only Entra / workload identities (including CI via federated credentials) and RBAC roles (such as `AcrPull` / `AcrPush`) are used for registry access.
 - Optionally tighten ACR network rules for non-lab environments (for example, restricting access to specific egress paths or private endpoints if introduced later).
 
-7.7 Terraform remote backend migration:
-- Create an Azure Storage account and container dedicated to Terraform state for this lab.
+---
+
+### 7.7 Terraform remote backend migration
+
+- The storage account was created in Phase 2.5.3; now migrate to use it.
 - Update `backend.tf` to use the `azurerm` backend, pointing at that storage account/container.
 - Update CI workflows (7.5) to initialize and use the remote backend.
 - Decommission the local backend file used in Phase 1 once the remote backend is live and validated.
@@ -762,41 +876,70 @@ Checkpoint:
 
 ---
 
-## Phase 8: Hardening & Advanced Topics (Optional)
+## Phase 8: Cloudflare & Advanced Topics
 
-**Goal:** Add advanced, more “enterprise-like” capabilities.
+**Goal:** Add Cloudflare Tunnel as a secure front door, WAF/rate limiting, and other advanced capabilities.
 
-Examples (each can be its own mini-phase):
+---
 
-8.1 Rate limiting & DDoS:
-- More advanced Cloudflare rules
-- App-level rate limiting for specific endpoints
+### 8.1 Cloudflare Tunnel (cloudflared)
 
-8.2 Direct Key Vault usage:
+- Create a Cloudflare Tunnel:
+  - Install `cloudflared` locally and establish a tunnel manually first.
+  - Map the tunnel to your existing Ingress to validate end-to-end.
+- Migrate tunnel into AKS:
+  - Deploy `cloudflared` as a Deployment in an `infra-cloudflare` namespace.
+  - Configure it to connect to the same tunnel.
+  - Route traffic to the internal NGINX Ingress Service.
+
+**Outcome:**
+- External traffic flows: Browser → Cloudflare → Tunnel → AKS Ingress → Pod.
+- No public LoadBalancer IP exposed.
+
+---
+
+### 8.2 Cloudflare WAF & rate limiting
+
+- On an appropriate Cloudflare plan:
+  - Enable WAF rules for the domain.
+  - Configure rate limiting for sensitive endpoints (e.g. login, API).
+- Document what is handled at Cloudflare edge vs in-cluster.
+
+---
+
+### 8.3 Direct Key Vault usage
 - Replace CSI in a test service with:
   - Direct Key Vault SDK calls + caching
 - Compare and document tradeoffs
 
-8.3 Service mesh:
-- Introduce Istio / Linkerd:
+---
+
+### 8.4 Service mesh
+- Introduce Istio or Linkerd:
   - mTLS between services
   - Traffic shifting
-  - Mesh-level metrics
+  - Mesh-level observability
 
-8.4 Dapr:
+---
+
+### 8.5 Dapr
 - Introduce Dapr for:
   - Service invocation
   - Pub/Sub over Service Bus
   - State store abstraction (e.g. Postgres/Redis)
 
-8.5 Full OSS observability:
+---
+
+### 8.6 Full OSS observability
 - Deploy:
   - Tempo for traces
   - Loki for logs
-- Switch OTEL exports to those
-- Compare with Azure Monitor-based setup
+- Switch OTEL Collector exports to Tempo/Loki.
+- Compare with Azure Monitor-based setup.
 
-8.6 Split AKS system and user node pools (post free-tier upgrade):
+---
+
+### 8.7 Split AKS system and user node pools
 - Re-enable the dedicated `user` node pool in Terraform with an appropriate, supported VM SKU (for example `Standard_D2ls_v5` or similar) once the subscription has sufficient vCPU quota.
 - Keep the `system` pool small and stable for control-plane and platform add-ons; direct application workloads to the `user` pool using:
   - Node labels / `nodeSelector` / `nodeAffinity`.
@@ -805,3 +948,19 @@ Examples (each can be its own mini-phase):
 - Validate that:
   - System components remain on the `system` pool.
   - Application pods land on the `user` pool by default.
+
+---
+
+### 8.8 Event-driven autoscaling with KEDA
+- Install KEDA into the cluster (via Helm or ArgoCD):
+  - Deploy the KEDA operator into its own namespace.
+  - Confirm KEDA CRDs are installed.
+- Configure one or more KEDA ScaledObjects:
+  - Scale `order-worker` from Azure Service Bus queue length.
+  - Optionally scale an API deployment from HTTP metrics or CPU.
+- Validate scaling behavior:
+  - Generate load (for example, enqueue messages) and observe pod count changes.
+  - Confirm scaling down when load subsides.
+- Compare:
+  - HPA-only scaling from Phase 7.4 vs. KEDA event-driven scaling.
+  - Document trade-offs and when to use each.
