@@ -45,16 +45,17 @@ The list of applied learning objectives to build real operational intuition.
   - [ ] App → Service Bus
 - [ ] Validate blocking/allowing using curl + nslookup
 
-### 2.3 Flux Kustomization
+### 2.3 ArgoCD Application + Kustomization
 - [ ] Write `infra/k8s/base/service-a/deployment.yaml`
 - [ ] Write `infra/k8s/overlays/dev/kustomization.yaml`
-- [ ] Install Flux in the cluster
-- [ ] Apply one Kustomization via Git and watch it reconcile
+- [ ] Install ArgoCD in the cluster
+- [ ] Create ArgoCD Application pointing to the Git path
+- [ ] Watch ArgoCD sync and reconcile
 
-### 2.4 ExternalSecret + Key Vault CSI Binding
+### 2.4 Key Vault CSI Binding
 - [ ] Write SecretProviderClass YAML
-- [ ] Write ExternalSecret YAML
-- [ ] Validate secret sync by reading the native K8s Secret
+- [ ] Mount secrets into pod as files or environment variables
+- [ ] Validate secret access from pod using Workload Identity
 
 ### 2.5 Complete Workload Identity Path 
 - [ ] Create AAD Workload Identity components
@@ -94,14 +95,15 @@ The list of applied learning objectives to build real operational intuition.
 # 4. PaaS Integration (SQL, Cosmos, Service Bus)
 
 ### 4.1 Terraform PaaS Provisioning
-- [ ] Postgres Flexible Server (private endpoint)
-- [ ] Cosmos DB account (private endpoint)
-- [ ] Service Bus (private endpoint)
-- [ ] Key Vault
-- [ ] Private DNS zones + links
+- [X] Postgres Flexible Server (private endpoint)
+- [X] Cosmos DB account (private endpoint)
+- [X] Service Bus 
+- [C] Key Vault
+- [C] Private DNS zones + links
 
 ### 4.2 Application Integration
 - [ ] App → Postgres via private DNS
+- [ ] App → Cosmos DB via private DNS
 - [ ] App → Service Bus via private DNS
 - [ ] Verify connections from pod using curl + tcpping or equivalent
 
@@ -162,21 +164,21 @@ The list of applied learning objectives to build real operational intuition.
 # 7. GitOps Failure & Recovery Labs
 
 ### 7.1 Good Rollout
-- [ ] Deploy v1 of catalog-api via Flux
+- [ ] Deploy v1 of catalog-api via ArgoCD
 - [ ] Validate pod health and SLOs
 
 ### 7.2 Bad Rollout
 - [ ] Update image tag to v2 with broken readiness
-- [ ] Flux applies it
+- [ ] ArgoCD syncs and applies it
 - [ ] SLOs degrade
 
 ### 7.3 GitOps Rollback
 - [ ] `git revert` commit to return to v1
-- [ ] Flux reconciles and restores health
+- [ ] ArgoCD syncs and restores health
 
 ### 7.4 Drift Correction
 - [ ] Manually scale Deployment to wrong replica count
-- [ ] Flux reverts it automatically
+- [ ] ArgoCD detects drift and reverts it automatically (if self-heal enabled)
 
 ---
 

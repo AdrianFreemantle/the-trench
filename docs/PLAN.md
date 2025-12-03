@@ -2,147 +2,14 @@
 
 ## Phase 0: Repo, Structure, and Working Agreements
 
-**Goal:** Establish repo structure, tooling choices, and conventions before writing infra or app code.
-
-Current Step: 1
-Completed Stes: 0
-
-Steps:
 ## Phase 0: Repository Setup, Conventions, and App Skeletons
 Establish the repository structure, conventions, governance, and minimal service skeletons needed for later infrastructure and CI/CD work.  
 No real business logic yet. Only “hello world” containers to ensure everything builds and runs.
 
-0.1 Create mono-repo
+**Learning Objective Checkpoint**
 
-Repository name: `cloud-native-aks-lab` (or `the-trench`).
-
-Top-level folders:
-
-infra/
-  terraform/          # Core Azure infra
-  cluster-addons/     # Add-ons installed after cluster creation
-
-apps/
-  catalog-api/        # Node.js skeleton service
-  orders-api/         # Python skeleton service
-  order-worker/       # Node.js skeleton worker
-  shop-ui/            # Next.js skeleton UI
-
-ops/
-  runbooks/           # Operational docs
-  docs/               # Architecture and planning docs
-
-k8s/
-  apps/               # Workload manifests (later)
-  infra/              # Add-ons managed via GitOps (later)
-
-ci/
-  github/             # GitHub Actions pipelines (build-only in early phases)
-
-Add placeholder README files in each top-level folder where necessary.
-
----
-
-0.2 Define coding and infra conventions
-
-Document in `CONVENTIONS.md`:
-
-- Preferred languages:
-  - Node.js 20 for catalog-api and order-worker
-  - Python 3.12 for orders-api
-  - Next.js with TypeScript for shop-ui
-
-- Container base images:
-  - node:20-slim
-  - python:3.12-slim
-
-- Naming conventions:
-  - Azure: trench-<service>-<resource>-<env>
-  - Kubernetes: <service>-<component>
-
-- Tagging strategy:
-  - owner
-  - environment
-  - cost-center
-  - purpose
-
----
-
-0.3 Initialize Git + GitHub repo
-
-- Initialize git locally.
-- Add top-level `.gitignore`:
-  - Terraform
-  - Node.js
-  - Python
-  - Next.js
-  - Docker-related ignores
-
-- Create initial `README.md`:
-  - Summary of project purpose
-  - Phase structure
-  - High-level architecture goals
-
-Push to GitHub.
-
----
-
-0.4 Create minimal service skeletons (no logic)
-
-Create **very minimal** app scaffolds so CI, containers, and AKS later have something to deploy.
-
-- catalog-api (Node.js)
-  - index.js: express server with `/healthz`
-  - Dockerfile
-  - package.json
-
-- orders-api (Python)
-  - main.py with FastAPI `/healthz`
-  - requirements.txt
-  - Dockerfile
-
-- order-worker (Node.js)
-  - worker.js with log: “worker running”
-  - Dockerfile
-  - package.json
-
-- shop-ui (Next.js)
-  - Next.js “hello world” page
-  - Dockerfile
-
-- The goal:  
-  - All services build as containers  
-  - Each has a health endpoint  
-  - Nothing more
-
----
-
-0.5 Local docker-compose for developer sanity
-
-Create `docker-compose.yml` to run all skeleton services together.  
-No databases yet.  
-Just prove containers run.
-
-Services:
-- catalog-api
-- orders-api
-- order-worker
-- shop-ui
-
-Optional:
-- Local Postgres to be added in Phase 6 (Cosmos DB will be a managed Azure resource, not run locally)
-
----
-
-0.6 Checkpoint
-
-At the end of Phase 0:
-
-- Repo structure exists
-- Conventions documented
-- GitHub repo initialized
-- All four services exist as “hello world” containers
-- Local docker-compose works
+The following learning objectives can now be completed:
+- 0.1 Terraform & Repo Setup
 
 ---
 
@@ -202,6 +69,11 @@ Apply consistent tags to every resource via Terraform:
 
 ### 1.3 Networking: Hub–Spoke VNets
 
+**Learning Objective Checkpoint**
+
+The following learning objectives are to be completed as part of this phase:
+- 1.1 VNet + Subnets
+
 Provision hub and spoke VNets using Terraform.
 
 **Hub VNet (core)**
@@ -222,6 +94,7 @@ Provision hub and spoke VNets using Terraform.
 
 **Outcome:**
 - Baseline network topology in place for private AKS and Private Endpoints.
+
 ---
 
 ### 1.4 Azure Firewall (Minimal Initial Policy)
@@ -260,6 +133,11 @@ Do not yet wire AKS to ACR via Terraform; that comes in the AKS section.
 ---
 
 ### 1.6 Private AKS Cluster
+
+**Learning Objective Checkpoint**
+
+The following learning objectives are to be completed as part of this phase:
+- 1.2 AKS Cluster Creation
 
 Provision AKS in `rg-trench-aks-dev` with:
 
@@ -344,6 +222,11 @@ Terraform should create DNS A records for each Private Endpoint.
 **Outcome:**
 - Name resolution for all Private Endpoints works from the AKS spoke VNet.
 
+**Learning Objective Checkpoint**
+
+The following learning objectives can now be completed:
+- 4.1 Terraform PaaS Provisioning
+
 ---
 
 ### 1.9 Checkpoint
@@ -389,6 +272,12 @@ Steps:
   - `kubectl get pods -A`
 
 2.2 Workload Identity plumbing:
+
+**Learning Objective Checkpoint**
+
+The following learning objectives are to be completed as part of this phase:
+- 2.5 Complete Workload Identity Path
+
 - Confirm AKS OIDC + Workload Identity enabled
 - Create one or more Entra app registrations / workload identities for:
   - Postgres access
@@ -401,6 +290,12 @@ Steps:
 - Document full path from pod → Service Account → Federated Credential → Entra → role
 
 2.3 Key Vault CSI Driver:
+
+**Learning Objective Checkpoint**
+
+The following learning objectives are to be completed as part of this phase:
+- 2.4 Key Vault CSI Binding
+
 - Install Secrets Store CSI driver + Key Vault provider into cluster
 - Configure a sample Pod that:
   - Uses Workload Identity
@@ -533,6 +428,11 @@ Checkpoint (Phase 2):
 - Service Bus network-locked
 - Remote backend storage account exists
 
+**Learning Objective Checkpoint**
+
+The following learning objectives can now be completed:
+- 5.3 Firewall / Egress Rules (failure lab - test by temporarily blocking egress rules)
+
 After Phase 2, all Azure Terraform is complete. A single `terraform apply` provisions the entire platform.
 
 ---
@@ -581,6 +481,11 @@ Steps:
 
 ### 3.3 OTEL Collector
 
+**Learning Objective Checkpoint**
+
+The following learning objectives are to be completed as part of this phase:
+- 3.1 OTel Collector Deployment
+
 - Deploy OpenTelemetry Collector in its own namespace.
 - Configure receivers:
   - OTLP (gRPC and HTTP) for app telemetry
@@ -595,21 +500,29 @@ Steps:
 
 ---
 
-### 3.4 Alerting
+### 3.4 Alerting and SLOs
 
+**Learning Objective Checkpoint**
+
+The following learning objectives are to be completed as part of this phase:
+- 3.2 SLO Setup
+
+- Define one service-level objective (SLO):
+  - Target: `success_rate >= 99.9%` over 30-day window
+  - SLI: `sum(rate(http_requests_total{status=~"2.."}[5m])) / sum(rate(http_requests_total[5m]))`
 - Configure Prometheus alert rules:
-  - High error rate
-  - High latency
-  - CPU/memory saturation
+  - Multi-window multi-burn-rate alerts for SLO violations
+    - Fast burn (1h window): immediate page
+    - Slow burn (6h window): warning
+  - Reference: Google SRE Workbook burn-rate alerting methodology
+  - Additional alerts for:
+    - High error rate
+    - High latency (p95/p99)
+    - CPU/memory saturation
 - Configure Alertmanager or Grafana alerts:
   - Email notifications to admin address
-
----
-
-Checkpoint (Phase 3):
-- Grafana accessible with cluster metrics dashboards
-- OTEL Collector running and ready to receive app telemetry
-- Alerts configured and tested
+- Validate:
+  - Temporarily break a route to trigger alerts
 
 ---
 
@@ -676,6 +589,16 @@ Checkpoint (Phase 4):
 - No static secrets; all auth via Workload Identity or Key Vault CSI
 - Test workloads successfully exercise the data/messaging layer
 
+**Learning Objective Checkpoint**
+
+The following learning objectives can now be completed:
+- 2.2 NetworkPolicy (requires an app that talks to Postgres and Service Bus)
+- 4.2 Application Integration
+- 5.1 NetworkPolicy Default Deny in Namespace
+- 5.2 Private DNS Mapping Issues (failure lab - test by removing Private DNS link)
+- 6.4 DNS Failure Scenarios
+- 6.5 Egress Block Failures
+
 ---
 
 ## Phase 5: Ingress, TLS, and First Demo App
@@ -724,7 +647,6 @@ Steps:
   - Deployment + Service
   - Ingress resource with TLS enabled
 - Validate end-to-end:
-  - Browser → DNS → HTTPS → Ingress → Pod
   - Certificate is valid and trusted
 
 ---
@@ -733,6 +655,14 @@ Checkpoint (Phase 5):
 - NGINX Ingress Controller running
 - TLS certificate issued via Let's Encrypt
 - Demo app reachable over HTTPS from a browser
+
+**Learning Objective Checkpoint**
+
+The following learning objectives can now be completed:
+- 2.1 Deployment + Service + Ingress
+- 6.1 Pod Pending Scenarios
+- 6.2 Pod Running but Not Ready / Non-responsive
+- 6.3 Service / Endpoint Failures
 
 ---
 
@@ -809,6 +739,8 @@ Steps:
 
 Note: GitOps is limited to a single environment overlay for now. Multi-environment GitOps hierarchy moved to Phase 8.
 
+Note: This phase overlaps with several learning objectives. Refer to objectives for implementation guidance.
+
 Checkpoint:
 - A user can:
   - Log in via Entra External ID
@@ -840,6 +772,11 @@ Note: Implement Workload Identity for ONE workload only (catalog-api). Full plat
 ---
 
 ### 7.2 GitOps with ArgoCD
+
+**Learning Objective Checkpoint**
+
+The following learning objectives are to be completed as part of this phase:
+- 2.3 ArgoCD Application + Kustomization
 
 - Install ArgoCD into the AKS cluster (for example via Terraform Helm provider or Helm CLI):
   - Create the `argocd` namespace in the cluster.
@@ -890,7 +827,6 @@ Note: Implement Workload Identity for ONE workload only (catalog-api). Full plat
 ---
 
 ### 7.6 ACR hardening
-
 - Disable the ACR admin user.
 - Ensure only Entra / workload identities (including CI via federated credentials) and RBAC roles (such as `AcrPull` / `AcrPush`) are used for registry access.
 - Optionally tighten ACR network rules for non-lab environments (for example, restricting access to specific egress paths or private endpoints if introduced later).
@@ -899,6 +835,15 @@ Checkpoint:
 - A single commit to main triggers:
   - CI build, tests, scans
   - Deployment to AKS via ArgoCD
+
+**Learning Objective Checkpoint**
+
+The following learning objectives can now be completed:
+- 7.1 Good Rollout
+- 7.2 Bad Rollout
+- 7.3 GitOps Rollback
+- 7.4 Drift Correction
+- 8.1 Add HPA (after 7.4)
 
 ---
 
@@ -1021,3 +966,12 @@ Checkpoint:
   - Shared infrastructure lives in reusable modules (for example, `infra/terraform/modules/core`).
   - Each environment (`dev`, and later `prod`) has a thin `env/<env>/` layer that wires variables and backends.
 - Keep behavior identical; the goal is a cleaner structure for future environments, not new features.
+
+---
+
+**Learning Objective Checkpoint**
+
+The following learning objectives can now be completed:
+- 8.2 Generate Traffic
+- 8.3 Trigger DB saturation scenario
+- 8.4 Apply fixes
