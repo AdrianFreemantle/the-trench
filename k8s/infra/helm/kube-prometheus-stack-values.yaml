@@ -1,0 +1,19 @@
+grafana:
+  enabled: true
+  service:
+    type: ClusterIP
+  resources:
+    requests:
+      cpu: 50m
+      memory: 128Mi
+
+prometheus:
+  prometheusSpec:
+    resources:
+      requests:
+        cpu: 100m
+        memory: 256Mi
+    retention: 2d
+
+alertmanager:
+  enabled: true
