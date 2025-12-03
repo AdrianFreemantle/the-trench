@@ -1,0 +1,18 @@
+controller:
+  replicaCount: 1
+
+  service:
+    type: LoadBalancer
+    annotations:
+      service.beta.kubernetes.io/azure-load-balancer-internal: 'true'
+    externalTrafficPolicy: Local
+
+  metrics:
+    enabled: true
+
+  ingressClassResource:
+    enabled: true
+    name: nginx
+    controllerValue: k8s.io/ingress-nginx
+
+  watchIngressWithoutClass: true
