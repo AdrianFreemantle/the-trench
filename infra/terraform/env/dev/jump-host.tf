@@ -82,6 +82,7 @@ resource "azurerm_linux_virtual_machine" "jump_host" {
   packages:
     - snapd
     - curl
+    - git
   runcmd:
     - snap install kubectl --classic
     - curl -sL https://aka.ms/InstallAzureCLIDeb | bash
