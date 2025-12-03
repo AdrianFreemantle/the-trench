@@ -75,7 +75,7 @@ resource "azurerm_federated_identity_credential" "orders_api" {
 # Needs access to:
 # - Key Vault (secrets)
 # - Service Bus (receive messages)
-# - MongoDB (internal, no Azure identity needed)
+# - Cosmos DB via configuration from Key Vault (no direct Azure identity to the database)
 ###############################################
 resource "azurerm_user_assigned_identity" "order_worker" {
   name                = "${module.conventions.names.aks_cluster}-order-worker"

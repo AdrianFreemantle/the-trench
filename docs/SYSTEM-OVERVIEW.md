@@ -65,18 +65,18 @@ Tech:
 
 ---
 
-### 3. order-worker (Node.js, MongoDB, Service Bus)
+### 3. order-worker (Node.js, Cosmos DB, Service Bus)
 Purpose:
 - Background processing for order events.
 
 Responsibilities:
 - Subscribe to `OrderPlaced` messages.
-- Insert order event documents into MongoDB.
+- Insert order event documents into Cosmos DB.
 - Simulate an email confirmation by writing a notification document or structured log entry.
 
 Tech:
 - Node.js 20
-- MongoDB (StatefulSet)
+- Azure Cosmos DB (NoSQL)
 - Service Bus consumer
 - OTEL
 
@@ -112,7 +112,7 @@ This minimal system drives the full infra stack:
 - Workload Identity for all services
 - Key Vault (CSI) for secrets
 - Postgres Flexible Server (managed PaaS)
-- MongoDB StatefulSet (stateful workload)
+- Azure Cosmos DB (NoSQL document store)
 - Azure Service Bus for async messaging
 - OTEL, Prometheus, Grafana for observability
 - ArgoCD GitOps

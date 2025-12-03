@@ -130,7 +130,7 @@ Services:
 - shop-ui
 
 Optional:
-- Local Postgres + Mongo to be added in Phase 6
+- Local Postgres to be added in Phase 6 (Cosmos DB will be a managed Azure resource, not run locally)
 
 ---
 
@@ -541,9 +541,24 @@ After Phase 2, all Azure Terraform is complete. A single `terraform apply` provi
 
 **Goal:** Deploy in-cluster observability (Prometheus, Grafana, OTEL) via Kubernetes manifests.
 
+Note: AKS and other Azure resources already send control-plane diagnostics to Log Analytics (Phase 2.5.1). In this phase you focus on in-cluster observability and add an internal NGINX Ingress Controller so you can reach dashboards (Grafana, ArgoCD, etc.) without constant `kubectl port-forward`. Public TLS endpoints remain in Phase 5.
+
 Steps:
 
-### 3.1 Prometheus + Grafana
+### 3.1 Internal Ingress for observability
+
+- Install NGINX Ingress Controller via Helm:
+  - Deploy to the system node pool.
+  - Use an internal Service (ClusterIP or internal LoadBalancer).
+- Expose:
+  - Grafana and other admin UIs behind internal hostnames.
+- Validate:
+  - Controller pods are running.
+  - You can reach Grafana/Prometheus via the internal ingress from the jump host or VPN.
+
+---
+
+### 3.2 Prometheus + Grafana
 
 - Deploy kube-prometheus-stack via Helm:
   - Prometheus for metrics collection
@@ -555,7 +570,7 @@ Steps:
 
 ---
 
-### 3.2 OTEL Collector
+### 3.3 OTEL Collector
 
 - Deploy OpenTelemetry Collector in its own namespace.
 - Configure receivers:
@@ -567,16 +582,6 @@ Steps:
   - Traces: OTLP → Azure Monitor
   - Metrics: OTLP → Prometheus or Azure
   - Logs: stdout scraping or OTLP → Azure
-
----
-
-### 3.3 App instrumentation baseline
-
-- Prepare libraries and patterns for services to use:
-  - Structured logging (JSON to stdout)
-  - OTEL tracer initialization
-  - Metrics (counters, histograms) for HTTP requests
-- Document how services should integrate.
 
 ---
 
@@ -600,7 +605,7 @@ Checkpoint (Phase 3):
 
 ## Phase 4: Data & Messaging Integration
 
-**Goal:** Wire Postgres, MongoDB, and Service Bus into the cluster using Workload Identity.
+**Goal:** Wire Postgres, Cosmos DB, and Service Bus into the cluster using Workload Identity.
 
 Note: Service Bus network rules were already applied in Phase 2.5.2.
 
@@ -625,13 +630,12 @@ Steps:
 
 ---
 
-### 4.3 MongoDB in AKS
+### 4.3 Cosmos DB integration
 
-- Deploy MongoDB as a StatefulSet:
-  - Headless Service for stable network identity
-  - PVCs using the default or a custom Storage Class
-- Minimal single-node or replica set configuration for learning.
-- Document clearly: this is lab-only, not production-grade.
+- Ensure an Azure Cosmos DB account, database, and container for order/event data exists (provisioned in the earlier Terraform phases).
+- Store Cosmos DB connection details (endpoint and keys/connection string) in Key Vault.
+- Mount Cosmos DB settings into `order-worker` via Key Vault CSI and Workload Identity.
+- Document clearly: this is lab-only sizing, not production-grade throughput or partitioning.
 
 ---
 
@@ -649,14 +653,14 @@ Steps:
 
 - Create small test pods or scripts that:
   - Connect to Postgres via Workload Identity
-  - Connect to MongoDB via internal Service
+  - Connect to Cosmos DB using configuration from Key Vault
   - Send/receive messages from Service Bus
 - Validate all connections work without static secrets.
 
 ---
 
 Checkpoint (Phase 4):
-- Postgres, MongoDB, and Service Bus all reachable from pods
+- Postgres, Cosmos DB, and Service Bus all reachable from pods
 - No static secrets; all auth via Workload Identity or Key Vault CSI
 - Test workloads successfully exercise the data/messaging layer
 
@@ -679,10 +683,13 @@ Steps:
 
 ### 5.2 Ingress Controller
 
-- Install NGINX Ingress Controller via Helm:
-  - Deploy to system node pool
-  - Use an internal Service (ClusterIP or internal LoadBalancer)
-- Validate the controller pods are running.
+- If you did not already install NGINX Ingress Controller in Phase 3:
+  - Install it via Helm into the cluster.
+  - Deploy to the system node pool.
+  - Use an internal Service (ClusterIP or internal LoadBalancer) or other topology appropriate for your environment.
+- If it already exists from Phase 3:
+  - Reuse the same controller for the first public HTTP path.
+- Validate the controller pods are running and ready to serve external traffic.
 
 ---
 
@@ -728,7 +735,7 @@ Steps:
     - User accounts (via External ID)
     - A few write/read operations
     - Use of messaging (e.g. background processing)
-    - Use of both Postgres and Mongo
+    - Use of both Postgres and Cosmos DB
 - Document this domain at a high level (no full DDD, just enough structure).
 
 ---
@@ -738,7 +745,7 @@ Steps:
 - Implement 2–3 small services, e.g.:
   - `api-gateway` or BFF for UI
   - `orders-service` (Postgres)
-  - `events-service` (Mongo + Service Bus)
+  - `events-service` (Cosmos DB + Service Bus)
 - Each service:
   - Uses OTEL for traces / metrics
   - Uses structured logging to stdout
@@ -776,16 +783,20 @@ Steps:
 
 ### 6.5 Observability integration
 
-- Confirm traces flow through:
-  - UI → API → downstream services → DB / Service Bus
+- Prepare and apply observability patterns in the services:
+  - Structured logging (JSON to stdout).
+  - OTEL tracer initialization.
+  - Metrics (counters, histograms) for HTTP requests.
+- Confirm traces flow through end-to-end:
+  - UI → API → downstream services → DB / Service Bus.
 - Add Grafana dashboards for:
-  - Per-service metrics
-  - Error rates, latencies
+  - Per-service metrics.
+  - Error rates and latencies.
 
 Checkpoint:
 - A user can:
   - Log in via Entra External ID
-  - Perform a simple workflow that writes to Postgres, stores something in Mongo, and triggers a Service Bus message
+  - Perform a simple workflow that writes to Postgres, stores something in Cosmos DB, and triggers a Service Bus message
   - You can see the whole thing in metrics, logs, and traces
 
 ---

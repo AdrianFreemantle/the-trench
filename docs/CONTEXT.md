@@ -38,7 +38,7 @@ We will build a **small, but realistic, multi-service web application** consisti
   - Expose HTTP APIs (REST/gRPC) to the UI and each other
   - Use:
     - **Postgres** for relational data
-    - **MongoDB** for document / event-style data
+    - **Azure Cosmos DB** for document / event-style data
     - **Azure Service Bus** for async workflows and background processing
 
 The exact domain is deliberately simple (e.g. some kind of “records/tasks/events” tracking), chosen to:
@@ -133,9 +133,9 @@ The focus is to **exercise the platform**:
   - Primary relational data store
   - Private Endpoint in the VNet
   - Minimal dev/test SKU to control cost
-- **Self-hosted MongoDB in AKS**:
-  - StatefulSet + PVCs
-  - Used to learn stateful workloads and discuss why self-hosted DBs in AKS are risky in production
+- **Azure Cosmos DB (NoSQL)**:
+  - Managed document database with automatic scaling options
+  - Used for event-style and document data
 - **Azure Service Bus**:
   - Main messaging backbone
   - Workload Identity + RBAC for access from services
@@ -146,7 +146,7 @@ The focus is to **exercise the platform**:
 - **Backend services** (2–3 services):
   - Python and/or Node.js
   - REST/gRPC APIs
-  - Use Postgres, Mongo, and Service Bus
+  - Use Postgres, Cosmos DB, and Service Bus
   - Implement:
     - OTEL tracing/metrics
     - Structured logging
@@ -217,9 +217,9 @@ The focus is to **exercise the platform**:
    - Security-first approach for secrets.  
    - Accepts Azure lock-in as a reasonable tradeoff for correctness and realism in Azure shops.
 
-5. **Postgres Flexible as managed RDBMS, self-hosted Mongo as NoSQL**  
+5. **Postgres Flexible as managed RDBMS, Cosmos DB as NoSQL**  
    - Postgres Flexible: realistic managed option.  
-   - Mongo in AKS: intentionally “not best practice” but used to teach stateful workloads and tradeoffs.
+   - Azure Cosmos DB: fully managed NoSQL/document store that avoids running a database inside the AKS cluster while still providing a realistic document data workload.
 
 6. **Azure Service Bus as primary messaging**  
    - Reflects typical Azure-native architecture.  

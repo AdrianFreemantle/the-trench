@@ -17,7 +17,7 @@ This project is a teaching and capability-building exercise: how to design, prov
 - Cloudflare DNS and Cloudflare Tunnel as the only ingress path
 - Azure Key Vault for secrets via CSI driver
 - Workload Identity for Pod-to-Azure authentication
-- Postgres Flexible Server (managed) + self-hosted MongoDB StatefulSet
+- Postgres Flexible Server (managed) + Azure Cosmos DB (NoSQL)
 - Azure Service Bus for async messaging
 - Next.js UI + 2–3 backend services (Node/Python)
 - Prometheus, Grafana, OTEL Collector, Azure Monitor
@@ -58,7 +58,7 @@ The project proceeds in well-defined phases. Each phase builds on the previous o
 - **Phase 1:** Terraform provisioning of Azure core infrastructure (hub-spoke VNets, Firewall, ACR, private AKS, Key Vault, Postgres, Service Bus)
 - **Phase 2:** Cluster add-ons, Workload Identity, Key Vault CSI, egress hardening, Log Analytics, Service Bus network rules, remote backend storage (all Terraform)
 - **Phase 3:** Observability stack (Prometheus, Grafana, OTEL) via Kubernetes manifests
-- **Phase 4:** Data and messaging integration (Postgres, Mongo, Service Bus with Workload Identity)
+- **Phase 4:** Data and messaging integration (Postgres, Cosmos DB, Service Bus with Workload Identity)
 - **Phase 5:** Ingress, TLS, and first demo app (NGINX Ingress, cert-manager, Let's Encrypt)
 - **Phase 6:** Application services (TinyShop backend + Next.js UI)
 - **Phase 7:** CI/CD with GitHub Actions + GitOps with ArgoCD
