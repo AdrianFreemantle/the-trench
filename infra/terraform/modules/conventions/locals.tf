@@ -52,7 +52,8 @@ locals {
     # AKS cluster
     aks_cluster = "${local.prefix}-${local.service_groups.aks}-cluster-${var.environment}"
 
-    log_analytics = "${local.prefix}-log-core-${var.environment}"
+    log_analytics   = "${local.prefix}-log-core-${var.environment}"
+    tfstate_storage = "${local.prefix}tfstate${var.environment}"
 
     # Private endpoints
     pe_kv = "${local.prefix}-${local.service_groups.pe}-kv-${var.environment}"
