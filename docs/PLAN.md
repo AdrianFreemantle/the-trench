@@ -159,7 +159,7 @@ Create and initialize `infra/terraform/`:
 
 - Files:
   - `providers.tf`
-  - `backend.tf` (local state for Phase 1; remote backend migration is handled in **Phase 7.7**)
+  - `backend.tf` (local state for Phase 1; remote backend migration is handled in **Phase 8.10**)
   - `main.tf`
   - `variables.tf`
   - `outputs.tf`
@@ -273,7 +273,7 @@ Provision AKS in `rg-trench-aks-dev` with:
   - `system` pool (small SKU, system workloads only).
   - `user` pool (for app workloads later).
 
-Note: Due to AKS restricted-SKU rules for very small VM sizes and the tight free-tier vCPU quota in this subscription, the initial implementation temporarily runs with a **single** `system` node pool only. The `user` pool Terraform resource is commented out and will be reintroduced in a later hardening phase once the subscription is upgraded and larger SKUs are available without hitting quota limits.
+Note: Due to AKS restricted-SKU rules for very small VM sizes and the tight free-tier vCPU quota in this subscription, the initial implementation temporarily runs with a **single** `system` node pool only. The `user` pool Terraform resource is commented out and will be reintroduced in a later hardening phase once the subscription is upgraded and larger SKUs are available without hitting quota limits. Initial deployment uses a single node pool (cost-optimised). System/user node pool split will occur after core platform is functioning. Node pool split moved to later phase.
 
 Also:
 
@@ -516,7 +516,7 @@ Complete all remaining Azure infrastructure via Terraform before moving to Kuber
 2.5.3 Remote backend storage account
 
 - Create an Azure Storage account and container for Terraform state.
-- Do **not** migrate to the remote backend yet; that happens in Phase 7.7.
+- Do **not** migrate to the remote backend yet; that happens in Phase 8.10.
 - This ensures the storage account exists and is ready when you automate Terraform.
 
 **Outcome:**
@@ -584,13 +584,14 @@ Steps:
 - Deploy OpenTelemetry Collector in its own namespace.
 - Configure receivers:
   - OTLP (gRPC and HTTP) for app telemetry
-- Configure exporters:
-  - Azure Monitor / Application Insights (traces, logs)
-  - Prometheus (metrics, if not using direct scrape)
+- Configure exporters (minimal scope):
+  - Prometheus metrics via kube-prometheus-stack (no additional OTEL metrics backends).
+  - Logs and traces to a single backend (for example, Azure Monitor / Application Insights).
 - Define pipelines:
-  - Traces: OTLP → Azure Monitor
-  - Metrics: OTLP → Prometheus or Azure
-  - Logs: stdout scraping or OTLP → Azure
+  - Traces: OTLP → Azure Monitor (or another single chosen backend).
+  - Metrics: direct scrape by Prometheus from app and system targets.
+  - Logs: stdout scraping or OTLP → Azure Monitor.
+- Additional exporter integrations moved to Phase 8.
 
 ---
 
@@ -615,6 +616,8 @@ Checkpoint (Phase 3):
 ## Phase 4: Data & Messaging Integration
 
 **Goal:** Wire Postgres, Cosmos DB, and Service Bus into the cluster using Workload Identity.
+
+Implement only essential integration paths (Postgres, Cosmos DB, Service Bus) with minimal configuration. Multi-region or advanced topology moved to Phase 8.
 
 Note: Service Bus network rules were already applied in Phase 2.5.2.
 
@@ -678,6 +681,8 @@ Checkpoint (Phase 4):
 ## Phase 5: Ingress, TLS, and First Demo App
 
 **Goal:** Create the first browser-to-pod HTTP path with TLS, using a minimal demo app.
+
+Full firewall/UDR/NAT policy expansion will be incremental. Minimal egress lockdown first; detailed rule-set and DNS proxying moved to Phase 8.
 
 Steps:
 
@@ -802,6 +807,8 @@ Steps:
   - Per-service metrics.
   - Error rates and latencies.
 
+Note: GitOps is limited to a single environment overlay for now. Multi-environment GitOps hierarchy moved to Phase 8.
+
 Checkpoint:
 - A user can:
   - Log in via Entra External ID
@@ -816,7 +823,10 @@ Checkpoint:
 
 Steps:
 
+Note: Implement Workload Identity for ONE workload only (catalog-api). Full platform-wide WI rollout moved to Phase 8.
+
 ### 7.1 GitHub Actions – CI
+
 - Create workflows to:
   - Build each service image
   - Run unit tests
@@ -830,6 +840,7 @@ Steps:
 ---
 
 ### 7.2 GitOps with ArgoCD
+
 - Install ArgoCD into the AKS cluster (for example via Terraform Helm provider or Helm CLI):
   - Create the `argocd` namespace in the cluster.
   - Install the ArgoCD chart into that namespace.
@@ -846,6 +857,7 @@ Steps:
 ---
 
 ### 7.3 Promotion flow
+
 - Define branch / tag strategy:
   - e.g. `main` for dev environment
 - Define how:
@@ -858,6 +870,7 @@ Steps:
 ---
 
 ### 7.4 Deployment safety
+
 - Add:
   - Readiness/liveness probes
   - Rolling update strategies
@@ -868,6 +881,7 @@ Steps:
 ---
 
 ### 7.5 Infra Terraform automation
+
 - Create a GitHub Actions workflow (or equivalent) to:
   - Run `terraform fmt`, `terraform validate`, and `terraform plan` on pull requests affecting `infra/terraform/`.
   - Run `terraform apply` for approved changes to the dev environment.
@@ -876,27 +890,10 @@ Steps:
 ---
 
 ### 7.6 ACR hardening
+
 - Disable the ACR admin user.
 - Ensure only Entra / workload identities (including CI via federated credentials) and RBAC roles (such as `AcrPull` / `AcrPush`) are used for registry access.
 - Optionally tighten ACR network rules for non-lab environments (for example, restricting access to specific egress paths or private endpoints if introduced later).
-
----
-
-### 7.7 Terraform remote backend migration
-
-- The storage account was created in Phase 2.5.3; now migrate to use it.
-- Update `backend.tf` to use the `azurerm` backend, pointing at that storage account/container.
-- Update CI workflows (7.5) to initialize and use the remote backend.
-- Decommission the local backend file used in Phase 1 once the remote backend is live and validated.
-
----
-
-### 7.8 Terraform structure refactor (modules + env overlays)
-
-- Refactor Terraform configuration so that:
-  - Shared infrastructure lives in reusable modules (for example, `infra/terraform/modules/core`).
-  - Each environment (`dev`, and later `prod`) has a thin `env/<env>/` layer that wires variables and backends.
-- Keep behavior identical; the goal is a cleaner structure for future environments, not new features.
 
 Checkpoint:
 - A single commit to main triggers:
@@ -908,8 +905,6 @@ Checkpoint:
 ## Phase 8: Cloudflare & Advanced Topics
 
 **Goal:** Add Cloudflare Tunnel as a secure front door, WAF/rate limiting, and other advanced capabilities.
-
----
 
 ### 8.1 Cloudflare Tunnel (cloudflared)
 
@@ -937,6 +932,7 @@ Checkpoint:
 ---
 
 ### 8.3 Direct Key Vault usage
+
 - Replace CSI in a test service with:
   - Direct Key Vault SDK calls + caching
 - Compare and document tradeoffs
@@ -944,6 +940,7 @@ Checkpoint:
 ---
 
 ### 8.4 Service mesh
+
 - Introduce Istio or Linkerd:
   - mTLS between services
   - Traffic shifting
@@ -952,6 +949,7 @@ Checkpoint:
 ---
 
 ### 8.5 Dapr
+
 - Introduce Dapr for:
   - Service invocation
   - Pub/Sub over Service Bus
@@ -960,6 +958,7 @@ Checkpoint:
 ---
 
 ### 8.6 Azure Application Gateway + AGIC (alternative front door)
+
 - Provision an Azure Application Gateway with WAF enabled via Terraform.
 - Install and configure the Application Gateway Ingress Controller (AGIC) for AKS.
 - Route traffic from Cloudflare (or DNS) → App Gateway → NGINX Ingress → services.
@@ -968,6 +967,7 @@ Checkpoint:
 ---
 
 ### 8.7 Full OSS observability
+
 - Deploy:
   - Tempo for traces
   - Loki for logs
@@ -977,6 +977,7 @@ Checkpoint:
 ---
 
 ### 8.8 Split AKS system and user node pools
+
 - Re-enable the dedicated `user` node pool in Terraform with an appropriate, supported VM SKU (for example `Standard_D2ls_v5` or similar) once the subscription has sufficient vCPU quota.
 - Keep the `system` pool small and stable for control-plane and platform add-ons; direct application workloads to the `user` pool using:
   - Node labels / `nodeSelector` / `nodeAffinity`.
@@ -989,6 +990,7 @@ Checkpoint:
 ---
 
 ### 8.9 Event-driven autoscaling with KEDA
+
 - Install KEDA into the cluster (via Helm or ArgoCD):
   - Deploy the KEDA operator into its own namespace.
   - Confirm KEDA CRDs are installed.
@@ -1001,3 +1003,21 @@ Checkpoint:
 - Compare:
   - HPA-only scaling from Phase 7.4 vs. KEDA event-driven scaling.
   - Document trade-offs and when to use each.
+
+---
+
+### 8.10 Terraform remote backend migration
+
+- The storage account was created in Phase 2.5.3; now migrate to use it.
+- Update `backend.tf` to use the `azurerm` backend, pointing at that storage account/container.
+- Update CI workflows (7.5) to initialize and use the remote backend.
+- Decommission the local backend file used in Phase 1 once the remote backend is live and validated.
+
+---
+
+### 8.11 Terraform structure refactor (modules + env overlays)
+
+- Refactor Terraform configuration so that:
+  - Shared infrastructure lives in reusable modules (for example, `infra/terraform/modules/core`).
+  - Each environment (`dev`, and later `prod`) has a thin `env/<env>/` layer that wires variables and backends.
+- Keep behavior identical; the goal is a cleaner structure for future environments, not new features.

@@ -105,16 +105,18 @@ Tech:
 This minimal system drives the full infra stack:
 
 - Private AKS cluster
+- System/user node pool separation planned but deferred until after initial platform stabilisation.
 - Hub/spoke VNet + Firewall
 - Cloudflare DNS + Tunnel ingress path
 - NGINX ingress within cluster
 - Entra External ID authentication flow
-- Workload Identity for all services
+- Workload Identity implemented for one representative workload initially; full adoption deferred to future phase.
 - Key Vault (CSI) for secrets
 - Postgres Flexible Server (managed PaaS)
 - Azure Cosmos DB (NoSQL document store)
 - Azure Service Bus for async messaging
 - OTEL, Prometheus, Grafana for observability
+- Initial platform implements minimal viable telemetry pipelines; extended exporters and multi-backend routing deferred.
 - ArgoCD GitOps
 - GitHub Actions CI
 - Terraform provisioning for all Azure resources
@@ -124,3 +126,14 @@ This minimal system drives the full infra stack:
 ## Goal
 
 The goal is not to build a full product but to create a realistic, multi-service application that forces meaningful infrastructure decisions and teaches hands-on AKS and Azure platform skills.
+
+---
+
+## Future Enhancements
+
+- Terraform module refactor
+- Backend migration
+- Full Workload Identity rollout
+- Multi-environment GitOps
+- Detailed firewall/egress policy set
+- Node pool optimisation and autoscaling tuning

@@ -1,6 +1,6 @@
 # Hands-On AKS Experience Checklist
 
-This is the complete applied learning path to build real operational intuition.
+The list of applied learning objectives to build real operational intuition.
 
 ---
 
@@ -20,24 +20,24 @@ This is the complete applied learning path to build real operational intuition.
 - [X] Apply and confirm VNet/subnets exist
 
 ### 1.2 AKS Cluster Creation 
-- [X] Generate Terraform for AKS cluster (basic SKU nodes, single pool for now)
+- [X] Generate Terraform for AKS cluster 
 - [X] Review OIDC, RBAC, network_profile, and outbound_type settings
 - [X] Apply Terraform and confirm AKS cluster is up
 - [X] Connect via `az aks get-credentials` (non-prod only)
 
 ---
 
-# 2. Manually-Crafted Kubernetes Essentials 
+# 2. Kubernetes Essentials 
 
 ### 2.1 Deployment + Service + Ingress
-- [ ] Write one Deployment YAML manually (labels, probes, resources)
-- [ ] Write matching Service YAML manually (selector correctness)
-- [ ] Write Ingress YAML manually pointing to service
+- [ ] Write one Deployment YAML (labels, probes, resources)
+- [ ] Write matching Service YAML (selector correctness)
+- [ ] Write Ingress YAML pointing to service
 - [ ] Apply and confirm end-to-end traffic flow
 
 ### 2.2 NetworkPolicy
 - [ ] Create a namespace
-- [ ] Apply a default-deny ingress + egress NetworkPolicy (hand-written)
+- [ ] Apply a default-deny ingress + egress NetworkPolicy
 - [ ] Add explicit allow rules for:
   - [ ] DNS (UDP/TCP 53 to kube-dns)
   - [ ] Ingress → app traffic
@@ -46,14 +46,14 @@ This is the complete applied learning path to build real operational intuition.
 - [ ] Validate blocking/allowing using curl + nslookup
 
 ### 2.3 Flux Kustomization
-- [ ] Manually write `infra/k8s/base/service-a/deployment.yaml`
-- [ ] Manually write `infra/k8s/overlays/dev/kustomization.yaml`
+- [ ] Write `infra/k8s/base/service-a/deployment.yaml`
+- [ ] Write `infra/k8s/overlays/dev/kustomization.yaml`
 - [ ] Install Flux in the cluster
 - [ ] Apply one Kustomization via Git and watch it reconcile
 
 ### 2.4 ExternalSecret + Key Vault CSI Binding
-- [ ] Write SecretProviderClass YAML manually
-- [ ] Write ExternalSecret YAML manually
+- [ ] Write SecretProviderClass YAML
+- [ ] Write ExternalSecret YAML
 - [ ] Validate secret sync by reading the native K8s Secret
 
 ### 2.5 Complete Workload Identity Path 
