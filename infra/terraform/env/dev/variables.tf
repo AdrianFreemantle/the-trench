@@ -72,3 +72,16 @@ variable "jump_host_allowed_source_ip" {
   type        = string
   description = "CIDR of the trusted admin IP allowed to SSH to the jump-host VM"
 }
+
+###############################################
+# Service Bus additional allowed IPs
+#
+# Optional list of additional public IPs or CIDR ranges
+# allowed to access the Service Bus namespace, in
+# addition to the Azure Firewall egress IP.
+###############################################
+variable "service_bus_additional_allowed_ips" {
+  type        = list(string)
+  description = "Additional public IPs or CIDR ranges allowed to access the Service Bus namespace (for admin/VPN access)."
+  default     = []
+}

@@ -81,6 +81,20 @@ resource "azurerm_servicebus_queue" "orders" {
   namespace_id = azurerm_servicebus_namespace.core.id
 }
 
+resource "azurerm_servicebus_namespace_network_rule_set" "core" {
+  namespace_id = azurerm_servicebus_namespace.core.id
+
+  default_action = "Deny"
+
+  ip_rules = concat(
+    [azurerm_public_ip.firewall_pip.ip_address],
+    var.service_bus_additional_allowed_ips,
+  )
+
+  public_network_access_enabled = true
+  trusted_services_allowed      = false
+}
+
 ###############################################
 # Private Endpoints
 #
