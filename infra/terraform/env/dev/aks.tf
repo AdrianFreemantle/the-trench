@@ -95,6 +95,10 @@ resource "azurerm_kubernetes_cluster" "aks" {
     secret_rotation_interval = "2h"
   }
 
+  oms_agent {
+    log_analytics_workspace_id = azurerm_log_analytics_workspace.core.id
+  }
+
   ###########################################
   # API server and workload identity
   # - Private only API endpoint
