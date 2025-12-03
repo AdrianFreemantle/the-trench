@@ -545,6 +545,15 @@ Note: AKS and other Azure resources already send control-plane diagnostics to Lo
 
 Steps:
 
+### 3.0 Kustomize structure for manifests
+
+- Establish a Kustomize layout for Kubernetes manifests:
+  - `k8s/base/` for reusable base manifests.
+  - `k8s/overlays/dev/` for dev-specific overrides (and later `prod`, etc.).
+- Ensure ArgoCD/GitOps in Phase 7 can target environment overlays rather than raw manifests.
+
+---
+
 ### 3.1 Internal Ingress for observability
 
 - Install NGINX Ingress Controller via Helm:
@@ -880,6 +889,15 @@ Steps:
 - Update CI workflows (7.5) to initialize and use the remote backend.
 - Decommission the local backend file used in Phase 1 once the remote backend is live and validated.
 
+---
+
+### 7.8 Terraform structure refactor (modules + env overlays)
+
+- Refactor Terraform configuration so that:
+  - Shared infrastructure lives in reusable modules (for example, `infra/terraform/modules/core`).
+  - Each environment (`dev`, and later `prod`) has a thin `env/<env>/` layer that wires variables and backends.
+- Keep behavior identical; the goal is a cleaner structure for future environments, not new features.
+
 Checkpoint:
 - A single commit to main triggers:
   - CI build, tests, scans
@@ -941,7 +959,15 @@ Checkpoint:
 
 ---
 
-### 8.6 Full OSS observability
+### 8.6 Azure Application Gateway + AGIC (alternative front door)
+- Provision an Azure Application Gateway with WAF enabled via Terraform.
+- Install and configure the Application Gateway Ingress Controller (AGIC) for AKS.
+- Route traffic from Cloudflare (or DNS) → App Gateway → NGINX Ingress → services.
+- Compare this pattern with the Cloudflare Tunnel + NGINX-only approach used earlier in the lab.
+
+---
+
+### 8.7 Full OSS observability
 - Deploy:
   - Tempo for traces
   - Loki for logs
@@ -950,7 +976,7 @@ Checkpoint:
 
 ---
 
-### 8.7 Split AKS system and user node pools
+### 8.8 Split AKS system and user node pools
 - Re-enable the dedicated `user` node pool in Terraform with an appropriate, supported VM SKU (for example `Standard_D2ls_v5` or similar) once the subscription has sufficient vCPU quota.
 - Keep the `system` pool small and stable for control-plane and platform add-ons; direct application workloads to the `user` pool using:
   - Node labels / `nodeSelector` / `nodeAffinity`.
@@ -962,7 +988,7 @@ Checkpoint:
 
 ---
 
-### 8.8 Event-driven autoscaling with KEDA
+### 8.9 Event-driven autoscaling with KEDA
 - Install KEDA into the cluster (via Helm or ArgoCD):
   - Deploy the KEDA operator into its own namespace.
   - Confirm KEDA CRDs are installed.
