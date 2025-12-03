@@ -4,9 +4,6 @@ set -euo pipefail
 # Simple helper to bootstrap Phase 3.1 (internal NGINX Ingress) on the dev cluster
 # from the jump host. Run this after SSH-ing into the jump box and cloning the repo.
 
-# You can optionally export SUBSCRIPTION_ID before running this script to avoid editing it.
-SUBSCRIPTION_ID="${SUBSCRIPTION_ID:-<REPLACE_WITH_SUBSCRIPTION_ID>}"
-
 RESOURCE_GROUP="rg-trench-aks-dev"
 CLUSTER_NAME="trench-aks-cluster-dev"
 
