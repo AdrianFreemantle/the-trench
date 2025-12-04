@@ -19,10 +19,10 @@ ports:
     servicePort: 8889
     protocol: TCP
 
-# Resource limits
+# Resource limits (reduced for dev environment)
 resources:
   requests:
-    cpu: 100m
+    cpu: 50m
     memory: 128Mi
   limits:
     cpu: 500m

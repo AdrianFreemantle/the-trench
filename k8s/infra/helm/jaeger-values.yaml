@@ -13,11 +13,11 @@ allInOne:
     hosts:
       - jaeger.trench.internal
 
-  # Resource limits
+  # Resource limits (reduced for dev environment)
   resources:
     requests:
-      cpu: 100m
-      memory: 256Mi
+      cpu: 50m
+      memory: 128Mi
     limits:
       cpu: 500m
       memory: 512Mi
