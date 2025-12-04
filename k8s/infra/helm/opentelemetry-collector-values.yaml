@@ -77,7 +77,9 @@ config:
         exporters: [debug] # Add azuremonitor when configured
 
 # ServiceMonitor for Prometheus to scrape OTEL Collector metrics
+# Must have label 'release: kube-prometheus-stack' for Prometheus to discover it
 serviceMonitor:
   enabled: true
-  namespace: otel-system
   interval: 30s
+  extraLabels:
+    release: kube-prometheus-stack

@@ -68,10 +68,10 @@ The list of applied learning objectives to build real operational intuition.
 # 3. Observability Foundation (OTel Collector, Metrics, Logs, Traces)
 
 ### 3.1 OTel Collector Deployment
-- [ ] Deploy OTel Collector 
+- [X] Deploy OTel Collector 
 - [ ] Configure:
-  - [ ] OTLP receiver
-  - [ ] Prometheus receiver/scraper
+  - [X] OTLP receiver
+  - [C] Prometheus receiver/scraper
   - [ ] Logs receiver (filelog or stdout)
   - [ ] Jaeger exporter OR console exporter
 - [ ] Deploy a sample app and confirm:
