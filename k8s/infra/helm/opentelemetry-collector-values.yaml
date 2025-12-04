@@ -47,9 +47,9 @@ config:
     prometheus:
       endpoint: 0.0.0.0:8889
 
-    # Logging exporter for debugging (outputs to collector logs)
-    logging:
-      loglevel: info
+    # Debug exporter for debugging (outputs to collector logs)
+    debug:
+      verbosity: detailed
 
     # Azure Monitor exporter - placeholder for Phase 3.3 completion
     # Uncomment and configure when ready to send traces/logs to Azure
@@ -62,19 +62,19 @@ config:
       traces:
         receivers: [otlp]
         processors: [memory_limiter, batch]
-        exporters: [logging] # Add azuremonitor when configured
+        exporters: [debug] # Add azuremonitor when configured
 
       # Metrics pipeline: receive via OTLP, batch, and expose for Prometheus
       metrics:
         receivers: [otlp]
         processors: [memory_limiter, batch]
-        exporters: [prometheus, logging]
+        exporters: [prometheus, debug]
 
       # Logs pipeline: receive via OTLP, batch, and export
       logs:
         receivers: [otlp]
         processors: [memory_limiter, batch]
-        exporters: [logging] # Add azuremonitor when configured
+        exporters: [debug] # Add azuremonitor when configured
 
 # ServiceMonitor for Prometheus to scrape OTEL Collector metrics
 serviceMonitor:
