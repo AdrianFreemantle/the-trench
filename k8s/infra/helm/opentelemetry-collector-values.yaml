@@ -11,6 +11,15 @@ replicaCount: 1
 image:
   repository: otel/opentelemetry-collector-contrib
 
+nodeSelector:
+  workload: platform
+
+tolerations:
+  - key: 'platform'
+    operator: 'Equal'
+    value: 'true'
+    effect: 'NoSchedule'
+
 # Enable metrics port for Prometheus scraping
 ports:
   metrics:

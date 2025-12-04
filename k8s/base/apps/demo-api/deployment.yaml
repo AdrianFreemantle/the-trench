@@ -15,6 +15,8 @@ spec:
       labels:
         app: demo-api
     spec:
+      nodeSelector:
+        workload: apps
       containers:
         - name: demo-api
           image: trenchacrcoredev.azurecr.io/demo-api:v1

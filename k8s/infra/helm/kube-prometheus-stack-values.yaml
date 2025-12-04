@@ -7,12 +7,28 @@ grafana:
       cpu: 50m
       memory: 128Mi
 
+  nodeSelector:
+    workload: platform
+
+  tolerations:
+    - key: 'platform'
+      operator: 'Equal'
+      value: 'true'
+      effect: 'NoSchedule'
+
 prometheus:
   prometheusSpec:
     resources:
       requests:
         cpu: 100m
         memory: 256Mi
+    nodeSelector:
+      workload: platform
+    tolerations:
+      - key: 'platform'
+        operator: 'Equal'
+        value: 'true'
+        effect: 'NoSchedule'
     retention: 2d
     # Watch ServiceMonitors in all namespaces
     serviceMonitorSelectorNilUsesHelmValues: false

@@ -127,7 +127,7 @@ resource "azurerm_kubernetes_cluster" "aks" {
   ###########################################
   default_node_pool {
     name           = "system"
-    vm_size        = "Standard_D2ls_v5"
+    vm_size        = "Standard_D2s_v3"
     node_count     = 1
     vnet_subnet_id = azurerm_subnet.spoke_aks_nodes.id
     type           = "VirtualMachineScaleSets"
@@ -146,23 +146,52 @@ resource "azurerm_kubernetes_cluster" "aks" {
 }
 
 ###############################################
-# User Node Pool
+# User Node Pools
 #
-# Dedicated pool for application workloads.
+# Dedicated pools for application and platform workloads.
 # System services stay on the default "system" pool.
 ###############################################
-# resource "azurerm_kubernetes_cluster_node_pool" "user" {
-#   name                  = "user"
-#   kubernetes_cluster_id = azurerm_kubernetes_cluster.aks.id
-#
-#   vm_size        = "Standard_D1_v2"
-#   node_count     = 1
-#   vnet_subnet_id = azurerm_subnet.spoke_aks_nodes.id
-#
-#   mode = "User"
-#
-#   tags = module.conventions.tags
-# }
+resource "azurerm_kubernetes_cluster_node_pool" "apps" {
+  name                  = "apps"
+  kubernetes_cluster_id = azurerm_kubernetes_cluster.aks.id
+
+  vm_size        = "Standard_B2s"
+  vnet_subnet_id = azurerm_subnet.spoke_aks_nodes.id
+  mode           = "User"
+
+  enable_auto_scaling = true
+  min_count           = 1
+  max_count           = 2
+
+  node_labels = {
+    workload = "apps"
+  }
+
+  tags = module.conventions.tags
+}
+
+resource "azurerm_kubernetes_cluster_node_pool" "platform" {
+  name                  = "platform"
+  kubernetes_cluster_id = azurerm_kubernetes_cluster.aks.id
+
+  vm_size        = "Standard_D2s_v3"
+  vnet_subnet_id = azurerm_subnet.spoke_aks_nodes.id
+  mode           = "User"
+
+  enable_auto_scaling = true
+  min_count           = 1
+  max_count           = 2
+
+  node_labels = {
+    workload = "platform"
+  }
+
+  node_taints = [
+    "platform=true:NoSchedule",
+  ]
+
+  tags = module.conventions.tags
+}
 ###############################################
 # ACR Pull Permissions for AKS
 #

@@ -25,6 +25,15 @@ server:
       cpu: 250m
       memory: 256Mi
 
+  nodeSelector:
+    workload: platform
+
+  tolerations:
+    - key: 'platform'
+      operator: 'Equal'
+      value: 'true'
+      effect: 'NoSchedule'
+
 # Resource limits for dev environment
 controller:
   resources:
@@ -35,6 +44,15 @@ controller:
       cpu: 500m
       memory: 512Mi
 
+  nodeSelector:
+    workload: platform
+
+  tolerations:
+    - key: 'platform'
+      operator: 'Equal'
+      value: 'true'
+      effect: 'NoSchedule'
+
 repoServer:
   resources:
     requests:
@@ -43,6 +61,15 @@ repoServer:
     limits:
       cpu: 250m
       memory: 256Mi
+
+  nodeSelector:
+    workload: platform
+
+  tolerations:
+    - key: 'platform'
+      operator: 'Equal'
+      value: 'true'
+      effect: 'NoSchedule'
 
 # Disable HA for dev
 redis-ha:
@@ -56,3 +83,12 @@ redis:
     limits:
       cpu: 100m
       memory: 128Mi
+
+  nodeSelector:
+    workload: platform
+
+  tolerations:
+    - key: 'platform'
+      operator: 'Equal'
+      value: 'true'
+      effect: 'NoSchedule'
