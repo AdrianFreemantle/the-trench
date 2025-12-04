@@ -81,19 +81,18 @@ Engineers and architects who want hands-on, realistic experience designing and o
 ## Status
 
 **Completed:**
-- Phase 0: Repository structure and conventions ✅
-- Phase 1: Azure core infrastructure via Terraform ✅
+- Phase 0: Repository structure and conventions 
+- Phase 1: Azure core infrastructure via Terraform
   - Hub-spoke VNets with peering
-  - Azure Firewall with UDR for egress control
-  - Private AKS cluster with Workload Identity enabled
-  - ACR, Key Vault, Postgres Flexible Server, Service Bus
-  - Private DNS zones and Private Endpoints
-  - Jump host for cluster access
+  - Azure Firewall with UDR for egress control 
+  - Private AKS cluster with Workload Identity enabled 
+  - ACR, Key Vault, Postgres Flexible Server, Service Bus 
+  - Private DNS zones and Private Endpoints 
+  - Jump host for cluster access 
+- Phase 2: Cluster add-ons and security plumbing 
+  - Jump host, Workload Identity, Key Vault CSI, egress hardening, Log Analytics wiring 
+- Phase 3: Observability stack (Prometheus, Grafana, OTEL Collector, Jaeger) 
+  - NGINX Ingress for internal access, kube-prometheus-stack, OTEL Collector, Jaeger with internal DNS/Ingress 
 
 **In Progress:**
-- Phase 2 (Cluster Add-ons and Security Plumbing)
-  - Phase 2.1: Jump host provisioned and validated ✅
-  - Phase 2.2: Workload Identity plumbing ✅
-  - Phase 2.3: Key Vault CSI Driver (AKS add-on enabled) ✅
-  - Phase 2.4: Egress hardening ✅
-  - Phase 2.5: Azure platform additions (Log Analytics, SB network rules, backend storage) 🚧
+- Phase 4: Data and messaging integration (Postgres, Cosmos DB, Service Bus with Workload Identity)

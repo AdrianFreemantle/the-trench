@@ -490,13 +490,7 @@ The following learning objectives are to be completed as part of this phase:
 - Configure receivers:
   - OTLP (gRPC and HTTP) for app telemetry
 - Configure exporters (minimal scope):
-  - Prometheus metrics via kube-prometheus-stack (no additional OTEL metrics backends).
-  - Logs and traces to a single backend (for example, Azure Monitor / Application Insights).
-- Define pipelines:
-  - Traces: OTLP → Azure Monitor (or another single chosen backend).
-  - Metrics: direct scrape by Prometheus from app and system targets.
-  - Logs: stdout scraping or OTLP → Azure Monitor.
-- Additional exporter integrations moved to Phase 8.
+  - Prometheus metrics via kube-prometheus-stack (no additional OTEL metrics backends).  
 
 ---
 
@@ -909,12 +903,16 @@ The following learning objectives can now be completed:
 
 ---
 
-### 8.7 Full OSS observability
+### 8.7 Full Observability
 
 - Deploy:
   - Tempo for traces
   - Loki for logs
 - Switch OTEL Collector exports to Tempo/Loki.
+- Logs and traces to a single backend (for example, Azure Monitor / Application Insights).
+- Define pipelines:
+  - Traces: OTLP → Azure Monitor (or another single chosen backend).
+  - Logs: stdout scraping or OTLP → Azure Monitor.
 - Compare with Azure Monitor-based setup.
 
 ---

@@ -69,15 +69,14 @@ The list of applied learning objectives to build real operational intuition.
 
 ### 3.1 OTel Collector Deployment
 - [X] Deploy OTel Collector 
-- [ ] Configure:
+- [X] Configure:
   - [X] OTLP receiver
-  - [C] Prometheus receiver/scraper
-  - [ ] Logs receiver (filelog or stdout)
-  - [ ] Jaeger exporter OR console exporter
-- [ ] Deploy a sample app and confirm:
-  - [ ] Metrics visible in Prometheus
-  - [ ] Traces visible in Jaeger
-  - [ ] Logs flowing to log backend (or stdout)
+  - [X] Prometheus receiver/scraper
+  - [X] Jaeger exporter OR console exporter
+- [X] Deploy a sample app and confirm:
+  - [X] Metrics visible in Prometheus
+  - [X] Traces visible in Jaeger
+  - [X] Logs flowing to log backend (or stdout)
 
 ### 3.2 SLO Setup
 - [ ] Instrument 1–2 routes with RED metrics
