@@ -11,6 +11,14 @@ replicaCount: 1
 image:
   repository: otel/opentelemetry-collector-contrib
 
+# Enable metrics port for Prometheus scraping
+ports:
+  metrics:
+    enabled: true
+    containerPort: 8889
+    servicePort: 8889
+    protocol: TCP
+
 # Resource limits
 resources:
   requests:
