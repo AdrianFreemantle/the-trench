@@ -7,6 +7,10 @@ mode: deployment
 # Single replica for dev environment
 replicaCount: 1
 
+# Use the contrib image which includes all receivers/processors/exporters
+image:
+  repository: otel/opentelemetry-collector-contrib
+
 # Resource limits
 resources:
   requests:
