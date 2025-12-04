@@ -1,0 +1,40 @@
+# Jaeger All-in-One Configuration
+# Deploys Jaeger for distributed tracing visualization
+# Uses in-memory storage (data lost on restart) - suitable for dev/testing
+
+# Use all-in-one deployment (collector, query, UI in one pod)
+allInOne:
+  enabled: true
+
+  # Resource limits
+  resources:
+    requests:
+      cpu: 100m
+      memory: 256Mi
+    limits:
+      cpu: 500m
+      memory: 512Mi
+
+# Disable individual components (all-in-one includes them)
+agent:
+  enabled: false
+
+collector:
+  enabled: false
+
+query:
+  enabled: false
+
+# Use in-memory storage (ephemeral)
+storage:
+  type: memory
+
+# Disable Cassandra (not needed for memory storage)
+provisionDataStore:
+  cassandra: false
+
+# ServiceMonitor for Prometheus to scrape Jaeger metrics
+serviceMonitor:
+  enabled: true
+  extraLabels:
+    release: kube-prometheus-stack
