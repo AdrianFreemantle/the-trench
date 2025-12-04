@@ -85,3 +85,16 @@ variable "service_bus_additional_allowed_ips" {
   description = "Additional public IPs or CIDR ranges allowed to access the Service Bus namespace (for admin/VPN access)."
   default     = []
 }
+
+###############################################
+# NGINX Ingress LoadBalancer IP
+#
+# Internal LoadBalancer IP assigned to the NGINX
+# Ingress Controller. Used for DNS A records pointing
+# to internal cluster services (Grafana, Prometheus, etc.).
+# Obtain this IP after deploying NGINX Ingress via Helm.
+###############################################
+variable "nginx_ingress_lb_ip" {
+  description = "Internal LoadBalancer IP for NGINX Ingress Controller"
+  type        = string
+}
