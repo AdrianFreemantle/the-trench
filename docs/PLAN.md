@@ -500,32 +500,6 @@ The following learning objectives are to be completed as part of this phase:
 
 ---
 
-### 3.4 Alerting and SLOs
-
-**Learning Objective Checkpoint**
-
-The following learning objectives are to be completed as part of this phase:
-- 3.2 SLO Setup
-
-- Define one service-level objective (SLO):
-  - Target: `success_rate >= 99.9%` over 30-day window
-  - SLI: `sum(rate(http_requests_total{status=~"2.."}[5m])) / sum(rate(http_requests_total[5m]))`
-- Configure Prometheus alert rules:
-  - Multi-window multi-burn-rate alerts for SLO violations
-    - Fast burn (1h window): immediate page
-    - Slow burn (6h window): warning
-  - Reference: Google SRE Workbook burn-rate alerting methodology
-  - Additional alerts for:
-    - High error rate
-    - High latency (p95/p99)
-    - CPU/memory saturation
-- Configure Alertmanager or Grafana alerts:
-  - Email notifications to admin address
-- Validate:
-  - Temporarily break a route to trigger alerts
-
----
-
 ## Phase 4: Data & Messaging Integration
 
 **Goal:** Wire Postgres, Cosmos DB, and Service Bus into the cluster using Workload Identity.
@@ -746,6 +720,30 @@ Checkpoint:
   - Log in via Entra External ID
   - Perform a simple workflow that writes to Postgres, stores something in Cosmos DB, and triggers a Service Bus message
   - You can see the whole thing in metrics, logs, and traces
+
+### 6.7 Alerting and SLOs
+
+**Learning Objective Checkpoint**
+
+The following learning objectives are to be completed as part of this phase:
+- 3.2 SLO Setup
+
+- Define one service-level objective (SLO):
+  - Target: `success_rate >= 99.9%` over 30-day window
+  - SLI: `sum(rate(http_requests_total{status=~"2.."}[5m])) / sum(rate(http_requests_total[5m]))`
+- Configure Prometheus alert rules:
+  - Multi-window multi-burn-rate alerts for SLO violations
+    - Fast burn (1h window): immediate page
+    - Slow burn (6h window): warning
+  - Reference: Google SRE Workbook burn-rate alerting methodology
+  - Additional alerts for:
+    - High error rate
+    - High latency (p95/p99)
+    - CPU/memory saturation
+- Configure Alertmanager or Grafana alerts:
+  - Email notifications to admin address
+- Validate:
+  - Temporarily break a route to trigger alerts  
 
 ---
 

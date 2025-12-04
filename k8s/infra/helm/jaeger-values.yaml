@@ -6,6 +6,13 @@
 allInOne:
   enabled: true
 
+  # Enable Ingress for internal access via NGINX
+  ingress:
+    enabled: true
+    ingressClassName: nginx
+    hosts:
+      - jaeger.trench.internal
+
   # Resource limits
   resources:
     requests:
