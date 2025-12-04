@@ -921,15 +921,17 @@ The following learning objectives can now be completed:
 
 ---
 
-### 8.8 Split AKS system and user node pools
+### 8.8 Split AKS system, infrastructure, and user node pools
 
-- Re-enable the dedicated `user` node pool in Terraform with an appropriate, supported VM SKU (for example `Standard_D2ls_v5` or similar) once the subscription has sufficient vCPU quota.
-- Keep the `system` pool small and stable for control-plane and platform add-ons; direct application workloads to the `user` pool using:
+- Re-enable the dedicated `user` and `infra` node pools in Terraform with an appropriate, supported VM SKU (for example `Standard_D2ls_v5` or similar) once the subscription has sufficient vCPU quota.
+- Keep the `system` pool small and stable for control-plane and platform add-ons
+- Direct application workloads to the `user` pool, and observability to the `infra` node pool using:
   - Node labels / `nodeSelector` / `nodeAffinity`.
-  - Taints and tolerations if you want to keep system and user workloads strongly separated.
+  - Taints and tolerations if you want to keep system, infra and user workloads strongly separated.
 - Update documentation to reflect the new scheduling model and any resource requests/limits tuned for the new pool layout.
 - Validate that:
   - System components remain on the `system` pool.
+  - Prometheus, Grafana, NGINX Ingress, cert-manager on the `infra` pool.
   - Application pods land on the `user` pool by default.
 
 ---

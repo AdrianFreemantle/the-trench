@@ -1,0 +1,37 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: ingress-grafana
+  namespace: observability
+spec:
+  ingressClassName: nginx
+  rules:
+    - host: grafana.trench.internal
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: kube-prometheus-stack-grafana
+                port:
+                  number: 80
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: ingress-prometheus
+  namespace: observability
+spec:
+  ingressClassName: nginx
+  rules:
+    - host: prometheus.trench.internal
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: kube-prometheus-stack-prometheus
+                port:
+                  number: 9090
