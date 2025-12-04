@@ -17,7 +17,7 @@ spec:
     spec:
       containers:
         - name: demo-api
-          image: demo-api
+          image: trenchacrcoredev.azurecr.io/demo-api:v1
           ports:
             - containerPort: 8000
               name: http-port
