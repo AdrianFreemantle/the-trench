@@ -59,9 +59,9 @@ config:
     debug:
       verbosity: detailed
 
-    # Jaeger exporter - sends traces to Jaeger UI
-    jaeger:
-      endpoint: jaeger-collector.observability.svc.cluster.local:14250
+    # OTLP exporter sending traces to Jaeger (OTLP gRPC)
+    otlp/jaeger:
+      endpoint: jaeger-collector.observability.svc.cluster.local:4317
       tls:
         insecure: true
 
@@ -76,7 +76,7 @@ config:
       traces:
         receivers: [otlp]
         processors: [memory_limiter, batch]
-        exporters: [jaeger, debug] # Add azuremonitor when configured
+        exporters: [otlp/jaeger, debug] # Add azuremonitor when configured
 
       # Metrics pipeline: receive via OTLP, batch, and expose for Prometheus
       metrics:
