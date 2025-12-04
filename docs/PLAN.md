@@ -1,5 +1,6 @@
 # Plan
 
+
 ## Phase 0: Repo, Structure, and Working Agreements
 
 ## Phase 0: Repository Setup, Conventions, and App Skeletons
@@ -494,82 +495,7 @@ The following learning objectives are to be completed as part of this phase:
 
 ---
 
-## Phase 4: Data & Messaging Integration
-
-**Goal:** Wire Postgres, Cosmos DB, and Service Bus into the cluster using Workload Identity.
-
-Implement only essential integration paths (Postgres, Cosmos DB, Service Bus) with minimal configuration. Multi-region or advanced topology moved to Phase 8.
-
-Note: Service Bus network rules were already applied in Phase 2.5.2.
-
-Steps:
-
-### 4.1 Postgres integration
-
-- Validate Postgres Flexible Server connectivity from cluster:
-  - Private Endpoint resolution works
-  - Connection succeeds using Workload Identity / AAD auth (or password from Key Vault if MI not configured for Postgres)
-- Create initial schema (manual or via migration script):
-  - `catalog` database schema
-  - `orders` database schema
-
----
-
-### 4.2 Service identity for Postgres
-
-- Configure Kubernetes ServiceAccounts for services needing DB access.
-- Bind ServiceAccounts to the federated credentials created in Phase 2.2.
-- Validate a test pod can authenticate to Postgres using Workload Identity.
-
----
-
-### 4.3 Cosmos DB integration
-
-- Ensure an Azure Cosmos DB account, database, and container for order/event data exists (provisioned in the earlier Terraform phases).
-- Store Cosmos DB connection details (endpoint and keys/connection string) in Key Vault.
-- Mount Cosmos DB settings into `order-worker` via Key Vault CSI and Workload Identity.
-- Document clearly: this is lab-only sizing, not production-grade throughput or partitioning.
-
----
-
-### 4.4 Service Bus integration
-
-- Validate Service Bus connectivity from cluster:
-  - Egress through Firewall reaches the namespace.
-  - Network rules (from Phase 2.5.2) allow cluster traffic.
-- Bind ServiceAccounts to Service Bus RBAC roles (created in Phase 2.2).
-- Test sending and receiving messages from the `orders` queue.
-
----
-
-### 4.5 Test workloads
-
-- Create small test pods or scripts that:
-  - Connect to Postgres via Workload Identity
-  - Connect to Cosmos DB using configuration from Key Vault
-  - Send/receive messages from Service Bus
-- Validate all connections work without static secrets.
-
----
-
-Checkpoint (Phase 4):
-- Postgres, Cosmos DB, and Service Bus all reachable from pods
-- No static secrets; all auth via Workload Identity or Key Vault CSI
-- Test workloads successfully exercise the data/messaging layer
-
-**Learning Objective Checkpoint**
-
-The following learning objectives can now be completed:
-- 2.2 NetworkPolicy (requires an app that talks to Postgres and Service Bus)
-- 4.2 Application Integration
-- 5.1 NetworkPolicy Default Deny in Namespace
-- 5.2 Private DNS Mapping Issues (failure lab - test by removing Private DNS link)
-- 6.4 DNS Failure Scenarios
-- 6.5 Egress Block Failures
-
----
-
-## Phase 5: Ingress, TLS, and First Demo App
+## Phase 4: Ingress, TLS, and First Demo App
 
 **Goal:** Create the first browser-to-pod HTTP path with TLS, using a minimal demo app.
 
@@ -577,7 +503,7 @@ Full firewall/UDR/NAT policy expansion will be incremental. Minimal egress lockd
 
 Steps:
 
-### 5.1 DNS
+### 4.1 DNS
 
 - Register or select a domain for the project.
 - Configure a DNS zone (Cloudflare or other provider).
@@ -586,7 +512,7 @@ Steps:
 
 ---
 
-### 5.2 Ingress Controller
+### 4.2 Ingress Controller
 
 - If you did not already install NGINX Ingress Controller in Phase 3:
   - Install it via Helm into the cluster.
@@ -598,18 +524,7 @@ Steps:
 
 ---
 
-### 5.3 TLS with cert-manager
-
-- Install cert-manager via Helm.
-- Configure a ClusterIssuer for Let's Encrypt:
-  - Use HTTP-01 solver for simplicity, or
-  - Use DNS-01 with your DNS provider's API.
-- Create a Certificate resource for the demo hostname.
-- Validate the certificate is issued successfully.
-
----
-
-### 5.4 Tiny demo app
+### 4.3 Tiny demo app
 
 - Deploy a simple echo or health-check app:
   - Deployment + Service
@@ -619,7 +534,7 @@ Steps:
 
 ---
 
-Checkpoint (Phase 5):
+Checkpoint (Phase 4):
 - NGINX Ingress Controller running
 - TLS certificate issued via Let's Encrypt
 - Demo app reachable over HTTPS from a browser
@@ -634,9 +549,78 @@ The following learning objectives can now be completed:
 
 ---
 
-## Phase 6: Application Services (Backend + UI) – v1
+## Phase 5: CI/CD & GitOps Bootstrap
 
-**Goal:** Implement minimal but realistic app services that exercise the platform.
+**Goal:** Establish automated build and deployment pipelines for the demo app.
+
+Now that we have a working demo app, we set up the CI/CD mechanics before building real services. This ensures all future work happens in a GitOps-first workflow.
+
+Steps:
+
+### 5.1 GitHub Actions – CI for demo app
+
+- Create a basic workflow to:
+  - Build the demo app container image
+  - Run linting / basic tests
+  - Scan image with Trivy
+  - Push image to ACR
+- Trigger on commits to `main` or PRs
+
+---
+
+### 5.2 ArgoCD installation
+
+**Learning Objective Checkpoint**
+
+The following learning objectives are to be completed as part of this phase:
+- 2.3 ArgoCD Application + Kustomization
+
+- Install ArgoCD into the AKS cluster (via Helm):
+  - Create the `argocd` namespace in the cluster.
+  - Install the ArgoCD chart into that namespace.
+  - Expose ArgoCD via internal Ingress (reuse NGINX from Phase 4).
+- Access ArgoCD UI and retrieve admin credentials.
+
+---
+
+### 5.3 GitOps for demo app
+
+- Structure `k8s/` manifests with Kustomize:
+  - `k8s/base/apps/` for base app manifests
+  - `k8s/overlays/dev/apps/` for dev-specific overrides
+  - `k8s/infra/` for infra add-ons (Prometheus, Grafana, OTEL, NGINX, cloudflared, etc.) with corresponding ArgoCD Applications in later phases
+- Create an ArgoCD Application for the demo app:
+  - Point to the Git repo + path
+  - Set sync policy (manual or auto)
+- Validate:
+  - ArgoCD syncs and deploys the demo app
+  - Changes to manifests in Git trigger redeployment
+
+---
+
+### 5.4 Image promotion flow
+
+- Define how image tags flow from CI → manifests:
+  - CI builds image with tag (e.g. commit SHA)
+  - CI updates Kustomize image ref in Git
+  - ArgoCD detects change and syncs
+- Validate end-to-end:
+  - Code change → CI build → manifest update → ArgoCD sync → pod rollout
+
+---
+
+Checkpoint (Phase 5):
+- GitHub Actions builds and pushes demo app images to ACR
+- ArgoCD deploys demo app from Git
+- A single commit triggers the full CI/CD flow
+
+---
+
+## Phase 6: Application Services + Data Integration
+
+**Goal:** Build real application services and integrate them with Postgres, Cosmos DB, and Service Bus.
+
+Now that CI/CD is in place, we build actual services and wire them to the data/messaging layer as each service needs it.
 
 Steps:
 
@@ -652,24 +636,63 @@ Steps:
 
 ---
 
-### 6.2 Backend services
+### 6.2 Catalog API (Postgres integration)
 
-- Implement 2–3 small services, e.g.:
-  - `api-gateway` or BFF for UI
-  - `orders-service` (Postgres)
-  - `events-service` (Cosmos DB + Service Bus)
-- Each service:
-  - Uses OTEL for traces / metrics
-  - Uses structured logging to stdout
-  - Uses environment/config pattern aligned with 12-factor, while using Key Vault CSI for secrets
-  - Implements basic resilience:
-    - Timeouts
-    - Retries
-    - Circuit-breaking (via library or custom pattern)
+- Implement `catalog-api` service:
+  - Provides catalog/product data
+  - Reads from Postgres `catalog` database
+- **Postgres integration steps:**
+  - Validate Postgres Flexible Server connectivity from cluster
+  - Private Endpoint resolution works
+  - Create `catalog` database schema (manual or via migration script)
+  - Configure Kubernetes ServiceAccount for `catalog-api`
+  - Bind ServiceAccount to Workload Identity federated credentials
+  - Validate connection using Workload Identity / AAD auth
+- Deploy via ArgoCD (reuse GitOps flow from Phase 5)
+- Service includes:
+  - OTEL for traces / metrics
+  - Structured logging to stdout
+  - Readiness/liveness probes
+  - Basic resilience (timeouts, retries)
 
 ---
 
-### 6.3 UI (Next.js) in AKS – first iteration
+### 6.3 Orders API (Postgres integration)
+
+- Implement `orders-api` service:
+  - Handles cart and order operations
+  - Writes to Postgres `orders` database
+- **Postgres integration steps:**
+  - Create `orders` database schema
+  - Configure ServiceAccount and Workload Identity
+  - Validate write operations
+- Deploy via ArgoCD
+- Service includes same observability/resilience patterns as `catalog-api`
+
+---
+
+### 6.4 Order Worker (Service Bus + Cosmos DB integration)
+
+- Implement `order-worker` background service:
+  - Listens to Service Bus `orders` queue
+  - Processes order events and writes to Cosmos DB
+- **Service Bus integration steps:**
+  - Validate Service Bus connectivity from cluster
+  - Egress through Firewall reaches the namespace
+  - Network rules (from Phase 2.5.2) allow cluster traffic
+  - Bind ServiceAccount to Service Bus RBAC roles
+  - Test sending/receiving messages from `orders` queue
+- **Cosmos DB integration steps:**
+  - Ensure Cosmos DB account, database, and container exist (provisioned in Terraform)
+  - Store Cosmos DB connection details (endpoint and keys) in Key Vault
+  - Mount Cosmos DB settings via Key Vault CSI and Workload Identity
+  - Document: this is lab-only sizing, not production-grade
+- Deploy via ArgoCD
+- Service includes same patterns as other services
+
+---
+
+### 6.5 UI (Next.js) in AKS
 
 - Create a basic Next.js app:
   - Server-side rendered pages
@@ -679,7 +702,7 @@ Steps:
 
 ---
 
-### 6.4 Entra External ID integration
+### 6.6 Entra External ID integration
 
 - Configure B2C / External ID tenant
 - Register apps:
@@ -693,7 +716,7 @@ Steps:
 
 ---
 
-### 6.5 Observability integration
+### 6.7 Observability integration
 
 - Prepare and apply observability patterns in the services:
   - Structured logging (JSON to stdout).
@@ -707,15 +730,26 @@ Steps:
 
 Note: GitOps is limited to a single environment overlay for now. Multi-environment GitOps hierarchy moved to Phase 8.
 
-Note: This phase overlaps with several learning objectives. Refer to objectives for implementation guidance.
-
-Checkpoint:
+Checkpoint (Phase 6):
+- All services deployed via ArgoCD
+- Postgres, Cosmos DB, and Service Bus integrated with respective services
+- No static secrets; all auth via Workload Identity or Key Vault CSI
 - A user can:
   - Log in via Entra External ID
   - Perform a simple workflow that writes to Postgres, stores something in Cosmos DB, and triggers a Service Bus message
-  - You can see the whole thing in metrics, logs, and traces
+  - See the whole flow in metrics, logs, and traces
 
-### 6.7 Alerting and SLOs
+**Learning Objective Checkpoint**
+
+The following learning objectives can now be completed:
+- 2.2 NetworkPolicy (requires an app that talks to Postgres and Service Bus)
+- 4.2 Application Integration
+- 5.1 NetworkPolicy Default Deny in Namespace
+- 5.2 Private DNS Mapping Issues (failure lab - test by removing Private DNS link)
+- 6.4 DNS Failure Scenarios
+- 6.5 Egress Block Failures
+
+### 6.8 Alerting and SLOs
 
 **Learning Objective Checkpoint**
 
@@ -737,96 +771,42 @@ The following learning objectives are to be completed as part of this phase:
 - Configure Alertmanager or Grafana alerts:
   - Email notifications to admin address
 - Validate:
-  - Temporarily break a route to trigger alerts  
+  - Temporarily break a route to trigger alerts
 
 ---
 
-## Phase 7: CI/CD and GitOps
+## Phase 7: Advanced CI/CD, Rollout Patterns & Failure Labs
 
-**Goal:** Automate build, test, security checks, and deployments end-to-end.
+**Goal:** Harden CI/CD pipelines, practice rollout scenarios, and run failure labs.
+
+Now that basic CI/CD is working, we add advanced patterns and deliberately break things to learn recovery.
 
 Steps:
 
-Note: Implement Workload Identity for ONE workload only (catalog-api). Full platform-wide WI rollout moved to Phase 8.
+### 7.1 Expand CI pipelines
 
-### 7.1 GitHub Actions – CI
-
-- Create workflows to:
-  - Build each service image
+- Enhance GitHub Actions workflows for all services:
   - Run unit tests
   - Run linting / static analysis
   - Run SonarQube/SonarCloud analysis
-  - Build Next.js app
-  - Build container images
-  - Scan images with Trivy
-  - Push images to ACR
+  - Multi-stage builds for optimization
+  - Parallel jobs for faster builds
 
 ---
 
-### 7.2 GitOps with ArgoCD
+### 7.2 Deployment safety patterns
 
-**Learning Objective Checkpoint**
-
-The following learning objectives are to be completed as part of this phase:
-- 2.3 ArgoCD Application + Kustomization
-
-- Install ArgoCD into the AKS cluster (for example via Terraform Helm provider or Helm CLI):
-  - Create the `argocd` namespace in the cluster.
-  - Install the ArgoCD chart into that namespace.
-  - Expose ArgoCD in a way appropriate for the environment (for example, internal LoadBalancer in dev, Cloudflare/Ingress in later phases).
-- Structure `k8s/` manifests/Helm charts:
-  - `k8s/apps/` for app deployments
-  - `k8s/infra-addons/` for Prometheus, Grafana, OTEL, cloudflared, etc.
-- Configure ArgoCD Applications:
-  - One per app or per group
-- Set up ArgoCD to:
-  - Watch main branches for changes
-  - Auto-sync or manual-sync depending on desired workflow
-
----
-
-### 7.3 Promotion flow
-
-- Define branch / tag strategy:
-  - e.g. `main` for dev environment
-- Define how:
-  - A code change results in:
-    - CI build + scan
-    - Image push
-    - Manifest update (tag change)
-    - ArgoCD sync and rollout
-
----
-
-### 7.4 Deployment safety
-
-- Add:
-  - Readiness/liveness probes
-  - Rolling update strategies
+- Add to all services:
+  - Readiness/liveness probes (if not already present)
+  - Rolling update strategies with maxUnavailable/maxSurge
+  - PodDisruptionBudgets for critical services
   - HPA manifests for key services
-- Validate rollbacks via:
-  - ArgoCD rollback or Git revert
 
 ---
 
-### 7.5 Infra Terraform automation
-
-- Create a GitHub Actions workflow (or equivalent) to:
-  - Run `terraform fmt`, `terraform validate`, and `terraform plan` on pull requests affecting `infra/terraform/`.
-  - Run `terraform apply` for approved changes to the dev environment.
-- This replaces the manual `terraform apply` approach used in Phase 1.
+### 7.3 Rollout & rollback labs
 
 ---
-
-### 7.6 ACR hardening
-- Disable the ACR admin user.
-- Ensure only Entra / workload identities (including CI via federated credentials) and RBAC roles (such as `AcrPull` / `AcrPush`) are used for registry access.
-- Optionally tighten ACR network rules for non-lab environments (for example, restricting access to specific egress paths or private endpoints if introduced later).
-
-Checkpoint:
-- A single commit to main triggers:
-  - CI build, tests, scans
-  - Deployment to AKS via ArgoCD
 
 **Learning Objective Checkpoint**
 
@@ -835,13 +815,67 @@ The following learning objectives can now be completed:
 - 7.2 Bad Rollout
 - 7.3 GitOps Rollback
 - 7.4 Drift Correction
-- 8.1 Add HPA (after 7.4)
+
+- **Good rollout:**
+  - Deploy a new version of a service
+  - Validate health checks pass
+  - Monitor SLOs remain green
+- **Bad rollout:**
+  - Deploy a version with broken readiness probe
+  - Observe rollout stalls
+  - SLOs degrade
+- **GitOps rollback:**
+  - `git revert` the bad commit
+  - ArgoCD syncs and restores health
+- **Drift correction:**
+  - Manually scale a Deployment to wrong replica count
+  - ArgoCD detects drift and reverts it (if self-heal enabled)
+
+---
+
+### 7.4 Infra Terraform automation
+
+- Create a GitHub Actions workflow (or equivalent) to:
+  - Run `terraform fmt`, `terraform validate`, and `terraform plan` on pull requests affecting `infra/terraform/`.
+  - Run `terraform apply` for approved changes to the dev environment.
+- This replaces the manual `terraform apply` approach used in Phase 1.
+
+---
+
+### 7.5 ACR hardening
+
+- Disable the ACR admin user.
+- Ensure only Entra / workload identities (including CI via federated credentials) and RBAC roles (such as `AcrPull` / `AcrPush`) are used for registry access.
+- Optionally tighten ACR network rules for non-lab environments (for example, restricting access to specific egress paths or private endpoints if introduced later).
+
+Checkpoint (Phase 7):
+- CI pipelines include tests, scans, and quality gates
+- Deployment safety patterns applied to all services
+- Rollout/rollback scenarios practiced and documented
+- Terraform automation in place for infrastructure changes
+- ACR hardened (no admin user, RBAC only)
+
+**Learning Objective Checkpoint**
+
+The following learning objectives can now be completed:
+- 8.1 Add HPA
 
 ---
 
 ## Phase 8: Cloudflare & Advanced Topics
 
 **Goal:** Add Cloudflare Tunnel as a secure front door, WAF/rate limiting, and other advanced capabilities.
+
+
+### 8.0 TLS with cert-manager
+
+- Install cert-manager via Helm.
+- Configure a ClusterIssuer for Let's Encrypt:
+  - Use HTTP-01 solver for simplicity, or
+  - Use DNS-01 with your DNS provider's API.
+- Create a Certificate resource for the demo hostname.
+- Validate the certificate is issued successfully.
+
 
 ### 8.1 Cloudflare Tunnel (cloudflared)
 

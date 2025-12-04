@@ -32,8 +32,8 @@ The list of applied learning objectives to build real operational intuition.
 ### 2.1 Deployment + Service + Ingress
 - [ ] Write one Deployment YAML (labels, probes, resources)
 - [ ] Write matching Service YAML (selector correctness)
-- [ ] Write Ingress YAML pointing to service
-- [ ] Apply and confirm end-to-end traffic flow
+- [X] Write Ingress YAML pointing to service
+- [X] Apply and confirm end-to-end traffic flow
 
 ### 2.2 NetworkPolicy
 - [ ] Create a namespace
