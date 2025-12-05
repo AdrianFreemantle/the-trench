@@ -4,6 +4,15 @@
 global:
   domain: argocd.trench.internal
 
+  nodeSelector:
+    workload: platform
+
+  tolerations:
+    - key: 'workload'
+      operator: 'Equal'
+      value: 'platform'
+      effect: 'NoSchedule'
+
 server:
   # Disable TLS since we're using HTTP Ingress
   insecure: true

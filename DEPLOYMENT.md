@@ -273,7 +273,6 @@ ArgoCD is installed into the `argocd` namespace and exposed via an internal Ingr
 From the repo root on the jump host:
 
 ```bash
-cd ~/the-trench/cloud-native-aks-lab
 bash ops/runbooks/deploy-argocd-dev.sh
 ```
 
@@ -359,7 +358,6 @@ docker push trenchacrcoredev.azurecr.io/demo-api:v1
 From the repo root on the jump host:
 
 ```bash
-cd ~/the-trench/cloud-native-aks-lab
 kubectl apply -k k8s/overlays/dev/apps
 ```
 
