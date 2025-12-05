@@ -62,3 +62,20 @@ kube-state-metrics:
       operator: 'Equal'
       value: 'platform'
       effect: 'NoSchedule'
+
+# node-exporter is a DaemonSet that must run on ALL nodes to collect node metrics.
+# It needs tolerations for all node taints but no nodeSelector restriction.
+prometheus-node-exporter:
+  tolerations:
+    - key: 'CriticalAddonsOnly'
+      operator: 'Equal'
+      value: 'true'
+      effect: 'NoSchedule'
+    - key: 'workload'
+      operator: 'Equal'
+      value: 'apps'
+      effect: 'NoSchedule'
+    - key: 'workload'
+      operator: 'Equal'
+      value: 'platform'
+      effect: 'NoSchedule'

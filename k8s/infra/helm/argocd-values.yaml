@@ -29,9 +29,9 @@ server:
     workload: platform
 
   tolerations:
-    - key: 'platform'
+    - key: 'workload'
       operator: 'Equal'
-      value: 'true'
+      value: 'platform'
       effect: 'NoSchedule'
 
 # Resource limits for dev environment
@@ -48,9 +48,9 @@ controller:
     workload: platform
 
   tolerations:
-    - key: 'platform'
+    - key: 'workload'
       operator: 'Equal'
-      value: 'true'
+      value: 'platform'
       effect: 'NoSchedule'
 
 repoServer:
@@ -66,9 +66,9 @@ repoServer:
     workload: platform
 
   tolerations:
-    - key: 'platform'
+    - key: 'workload'
       operator: 'Equal'
-      value: 'true'
+      value: 'platform'
       effect: 'NoSchedule'
 
 # Disable HA for dev
@@ -88,7 +88,7 @@ redis:
     workload: platform
 
   tolerations:
-    - key: 'platform'
+    - key: 'workload'
       operator: 'Equal'
-      value: 'true'
+      value: 'platform'
       effect: 'NoSchedule'

@@ -185,7 +185,7 @@ bash ops/runbooks/deploy-observability-dev.sh
 
 The script will:
 
-- Ensure required namespaces exist (e.g., `infra-ingress`, `observability`, `otel-system`).
+- Apply the `k8s/overlays/dev/infra` Kustomize overlay, which creates infra namespaces and ingress resources for NGINX, observability, and ArgoCD.
 - Install ingress-nginx using `k8s/infra/helm/ingress-nginx-values.yaml`.
 - Install kube-prometheus-stack using `k8s/infra/helm/kube-prometheus-stack-values.yaml`.
 - Install Jaeger using `k8s/infra/helm/jaeger-values.yaml`.
@@ -279,9 +279,8 @@ bash ops/runbooks/deploy-argocd-dev.sh
 
 The script will:
 
-- Ensure the `argocd` namespace exists via `k8s/base/infra/argocd/namespace.yaml`.
-- Install the ArgoCD Helm chart using `k8s/infra/helm/argocd-values.yaml`.
-- Apply the ArgoCD Ingress manifest `k8s/base/infra/argocd/ingress.yaml`.
+- Re-apply the `k8s/overlays/dev/infra` Kustomize overlay (idempotent; ensures the `argocd` namespace and ingress resources exist).
+- Install or upgrade the ArgoCD Helm chart using `k8s/infra/helm/argocd-values.yaml`.
 
 All ArgoCD components are configured to run on the **platform** node pool.
 
