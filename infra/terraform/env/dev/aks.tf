@@ -155,13 +155,12 @@ resource "azurerm_kubernetes_cluster_node_pool" "apps" {
   name                  = "apps"
   kubernetes_cluster_id = azurerm_kubernetes_cluster.aks.id
 
-  vm_size        = "Standard_B2s"
+  vm_size        = "Standard_D2s_v3"
   vnet_subnet_id = azurerm_subnet.spoke_aks_nodes.id
   mode           = "User"
-
-  enable_auto_scaling = true
-  min_count           = 1
-  max_count           = 2
+  auto_scaling_enabled = true
+  min_count            = 1
+  max_count            = 2
 
   node_labels = {
     workload = "apps"
@@ -177,10 +176,9 @@ resource "azurerm_kubernetes_cluster_node_pool" "platform" {
   vm_size        = "Standard_D2s_v3"
   vnet_subnet_id = azurerm_subnet.spoke_aks_nodes.id
   mode           = "User"
-
-  enable_auto_scaling = true
-  min_count           = 1
-  max_count           = 2
+  auto_scaling_enabled = true
+  min_count            = 1
+  max_count            = 2
 
   node_labels = {
     workload = "platform"
@@ -192,6 +190,7 @@ resource "azurerm_kubernetes_cluster_node_pool" "platform" {
 
   tags = module.conventions.tags
 }
+
 ###############################################
 # ACR Pull Permissions for AKS
 #
