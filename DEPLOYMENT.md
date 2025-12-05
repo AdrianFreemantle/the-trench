@@ -330,14 +330,6 @@ The demo FastAPI app is packaged and configured to run in its own namespace with
 
 ### 5.1 Ensure image in ACR
 
-The `demo-api` Deployment references an image such as:
-
-```yaml
-image: trenchacrcoredev.azurecr.io/demo-api:v1
-```
-
-Make sure this image exists in your ACR. If you need to build and push:
-
 On your local dev machine or build agent (with Docker and access to ACR):
 
 ```bash

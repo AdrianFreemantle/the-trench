@@ -13,6 +13,10 @@ global:
       value: 'platform'
       effect: 'NoSchedule'
 
+configs:
+  cm:
+    url: http://argocd.trench.internal
+
 server:
   # Disable TLS since we're using HTTP Ingress
   insecure: true
