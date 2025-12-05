@@ -54,6 +54,16 @@ prometheusOperator:
       value: 'platform'
       effect: 'NoSchedule'
 
+  admissionWebhooks:
+    patch:
+      nodeSelector:
+        workload: platform
+      tolerations:
+        - key: 'workload'
+          operator: 'Equal'
+          value: 'platform'
+          effect: 'NoSchedule'
+
 kube-state-metrics:
   nodeSelector:
     workload: platform
