@@ -123,14 +123,16 @@ resource "azurerm_kubernetes_cluster" "aks" {
   ###########################################
   # System node pool
   # - Single small node for cluster system workloads
+  # - Tainted CriticalAddonsOnly per Microsoft best practice
   # - Application workloads go to separate pool
   ###########################################
   default_node_pool {
-    name           = "system"
-    vm_size        = "Standard_D2s_v3"
-    node_count     = 1
-    vnet_subnet_id = azurerm_subnet.spoke_aks_nodes.id
-    type           = "VirtualMachineScaleSets"
+    name                         = "system"
+    vm_size                      = "Standard_D2s_v3"
+    node_count                   = 1
+    vnet_subnet_id               = azurerm_subnet.spoke_aks_nodes.id
+    type                         = "VirtualMachineScaleSets"
+    only_critical_addons_enabled = true
   }
 
   tags = module.conventions.tags
@@ -166,6 +168,10 @@ resource "azurerm_kubernetes_cluster_node_pool" "apps" {
     workload = "apps"
   }
 
+  node_taints = [
+    "workload=apps:NoSchedule",
+  ]
+
   tags = module.conventions.tags
 }
 
@@ -185,7 +191,7 @@ resource "azurerm_kubernetes_cluster_node_pool" "platform" {
   }
 
   node_taints = [
-    "platform=true:NoSchedule",
+    "workload=platform:NoSchedule",
   ]
 
   tags = module.conventions.tags

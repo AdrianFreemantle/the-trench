@@ -58,9 +58,9 @@ Review the plan carefully. Key items to confirm:
 
 - AKS cluster `trench-aks-cluster-dev` in `southafricanorth`.
 - Three node pools:
-  - `system` (default)
-  - `apps` (user, `Standard_B2s`, autoscale 1–2 nodes)
-  - `platform` (user, `Standard_D2s_v3`, autoscale 1–2 nodes, taint `platform=true:NoSchedule`).
+  - `system` (default, `Standard_D2s_v3`, 1 node, taint `CriticalAddonsOnly=true:NoSchedule`)
+  - `apps` (user, `Standard_D2s_v3`, autoscale 1–2 nodes, taint `workload=apps:NoSchedule`)
+  - `platform` (user, `Standard_D2s_v3`, autoscale 1–2 nodes, taint `workload=platform:NoSchedule`)
 - ACR, VNets, firewall, PaaS resources created as expected.
 
 ### 1.5 Apply changes
@@ -134,10 +134,16 @@ cd the-trench
 
 ### 2.3 Configure kubectl context and run basic checks (runbook)
 
+First, login to Azure:
+
+```bash
+az login --use-device-code
+az account set --subscription "<SUBSCRIPTION_ID>"
+```
+
 From the repo root on the jump host, use the runbook to configure kubectl and print basic cluster information:
 
 ```bash
-chmod +x ops/runbooks/config-kubectl-dev.sh  # one-time
 bash ops/runbooks/config-kubectl-dev.sh
 ```
 
@@ -149,13 +155,13 @@ This script:
 - Prints basic AKS cluster metadata (name, version, location, node RG).
 - Lists all node pools in a table.
 - Shows autoscaler settings for the `apps` and `platform` node pools, including `enableAutoScaling`, `minCount`, `maxCount`, and current node count.
-- Shows current Kubernetes nodes (detailed) and a sample of pods across all namespaces.
+- Shows current Kubernetes nodes
 
-You should see nodes labeled roughly as:
+You should see nodes labeled and tainted as follows:
 
-- `agentpool=system` with default labels.
-- `agentpool=apps`, `workload=apps`.
-- `agentpool=platform`, `workload=platform`, taint `platform=true:NoSchedule`.
+- `agentpool=system` with taint `CriticalAddonsOnly=true:NoSchedule` (AKS system pods only).
+- `agentpool=apps`, `workload=apps`, taint `workload=apps:NoSchedule` (application workloads).
+- `agentpool=platform`, `workload=platform`, taint `workload=platform:NoSchedule` (observability/infra workloads).
 
 ---
 

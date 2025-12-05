@@ -124,7 +124,3 @@ done
 
 echo "== Kubernetes nodes (detailed) =="
 kubectl get nodes -o wide || true
-
-echo
-echo "== Sample pods (first 40 across all namespaces) =="
-kubectl get pods -A -o wide | head -n 40 || true

@@ -5,9 +5,9 @@ controller:
     workload: platform
 
   tolerations:
-    - key: 'platform'
+    - key: 'workload'
       operator: 'Equal'
-      value: 'true'
+      value: 'platform'
       effect: 'NoSchedule'
 
   service:

@@ -83,9 +83,9 @@ resource "azurerm_linux_virtual_machine" "jump_host" {
     - snapd
     - curl
     - git
-    - helm
   runcmd:
     - snap install kubectl --classic
+    - snap install helm --classic
     - curl -sL https://aka.ms/InstallAzureCLIDeb | bash
   EOT
   )

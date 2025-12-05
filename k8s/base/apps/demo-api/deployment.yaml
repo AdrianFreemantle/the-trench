@@ -17,6 +17,11 @@ spec:
     spec:
       nodeSelector:
         workload: apps
+      tolerations:
+        - key: 'workload'
+          operator: 'Equal'
+          value: 'apps'
+          effect: 'NoSchedule'
       containers:
         - name: demo-api
           image: trenchacrcoredev.azurecr.io/demo-api:v1

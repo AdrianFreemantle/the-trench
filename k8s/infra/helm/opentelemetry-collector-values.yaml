@@ -15,9 +15,9 @@ nodeSelector:
   workload: platform
 
 tolerations:
-  - key: 'platform'
+  - key: 'workload'
     operator: 'Equal'
-    value: 'true'
+    value: 'platform'
     effect: 'NoSchedule'
 
 # Enable metrics port for Prometheus scraping

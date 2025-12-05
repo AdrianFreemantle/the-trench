@@ -6,6 +6,16 @@
 allInOne:
   enabled: true
 
+  # Schedule on platform node pool
+  nodeSelector:
+    workload: platform
+
+  tolerations:
+    - key: 'workload'
+      operator: 'Equal'
+      value: 'platform'
+      effect: 'NoSchedule'
+
   # Enable Ingress for internal access via NGINX
   ingress:
     enabled: true

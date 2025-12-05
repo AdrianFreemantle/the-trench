@@ -11,9 +11,9 @@ grafana:
     workload: platform
 
   tolerations:
-    - key: 'platform'
+    - key: 'workload'
       operator: 'Equal'
-      value: 'true'
+      value: 'platform'
       effect: 'NoSchedule'
 
 prometheus:
@@ -25,9 +25,9 @@ prometheus:
     nodeSelector:
       workload: platform
     tolerations:
-      - key: 'platform'
+      - key: 'workload'
         operator: 'Equal'
-        value: 'true'
+        value: 'platform'
         effect: 'NoSchedule'
     retention: 2d
     # Watch ServiceMonitors in all namespaces
@@ -36,3 +36,29 @@ prometheus:
 
 alertmanager:
   enabled: true
+  alertmanagerSpec:
+    nodeSelector:
+      workload: platform
+    tolerations:
+      - key: 'workload'
+        operator: 'Equal'
+        value: 'platform'
+        effect: 'NoSchedule'
+
+prometheusOperator:
+  nodeSelector:
+    workload: platform
+  tolerations:
+    - key: 'workload'
+      operator: 'Equal'
+      value: 'platform'
+      effect: 'NoSchedule'
+
+kube-state-metrics:
+  nodeSelector:
+    workload: platform
+  tolerations:
+    - key: 'workload'
+      operator: 'Equal'
+      value: 'platform'
+      effect: 'NoSchedule'
