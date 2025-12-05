@@ -16,10 +16,8 @@ global:
 configs:
   cm:
     url: http://argocd.trench.internal
-
-server:
-  # Disable TLS since we're using HTTP Ingress
-  insecure: true
+  params:
+    server.insecure: 'true'
 
   # Service configuration
   service:
