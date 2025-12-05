@@ -127,7 +127,6 @@ Keep the SSH session running while using the proxy. Press `Ctrl+C` to terminate.
 After connecting to the jump host, clone the repository:
 
 ```bash
-cd the-trench
 git clone https://github.com/AdrianFreemantle/the-trench.git
 cd the-trench
 ```
@@ -171,8 +170,8 @@ This step installs:
 
 - NGINX Ingress Controller (internal LoadBalancer).
 - kube-prometheus-stack (Prometheus + Grafana).
+- Jaeger (distributed tracing).
 - OpenTelemetry Collector.
-- Any other observability components wired in `deploy-observability-dev.sh`.
 
 All workloads are scheduled onto the **platform** node pool via `nodeSelector` + `tolerations` in the Helm values.
 
@@ -186,9 +185,10 @@ bash ops/runbooks/deploy-observability-dev.sh
 
 The script will:
 
-- Ensure required namespaces exist (e.g., `infra-ingress`, `observability`).
+- Ensure required namespaces exist (e.g., `infra-ingress`, `observability`, `otel-system`).
 - Install ingress-nginx using `k8s/infra/helm/ingress-nginx-values.yaml`.
 - Install kube-prometheus-stack using `k8s/infra/helm/kube-prometheus-stack-values.yaml`.
+- Install Jaeger using `k8s/infra/helm/jaeger-values.yaml`.
 - Install OpenTelemetry Collector using `k8s/infra/helm/opentelemetry-collector-values.yaml`.
 
 ### 3.2 Verify observability components
@@ -196,15 +196,71 @@ The script will:
 ```bash
 kubectl get pods -n infra-ingress -o wide
 kubectl get pods -n observability -o wide
+kubectl get pods -n otel-system -o wide
 ```
 
 You should see pods scheduled on **platform** nodes:
 
 - Ingress controller (`ingress-nginx-controller`).
-- Prometheus, Grafana.
+- Prometheus, Grafana, Jaeger.
 - OTEL collector.
 
 Confirm scheduling by checking node column and labels/taints on nodes.
+
+### 3.3 Access observability dashboards
+
+All observability components (Grafana, Prometheus, Jaeger) are exposed via internal Ingress resources using the NGINX Ingress Controller.
+
+#### 3.3.1 Get the Ingress IP
+
+First, get the internal LoadBalancer IP from the NGINX Ingress service:
+
+```bash
+kubectl get svc -n infra-ingress ingress-nginx-controller
+```
+
+Note the `EXTERNAL-IP` (internal IP in your VNet). This is the same IP used for ArgoCD and other services.
+
+#### 3.3.2 Configure /etc/hosts
+
+On the jump host (or any machine that can reach the internal IP), add entries to `/etc/hosts`:
+
+```bash
+INGRESS_IP="<INGRESS_IP_FROM_STEP_3.3.1>"
+sudo sh -c "echo \"$INGRESS_IP grafana.trench.internal\" >> /etc/hosts"
+sudo sh -c "echo \"$INGRESS_IP prometheus.trench.internal\" >> /etc/hosts"
+sudo sh -c "echo \"$INGRESS_IP jaeger.trench.internal\" >> /etc/hosts"
+```
+
+#### 3.3.3 Retrieve Grafana admin password
+
+Grafana is deployed with default credentials. The username is `admin` and the password can be retrieved from the Grafana secret:
+
+```bash
+kubectl get secret -n observability kube-prometheus-stack-grafana \
+  -o jsonpath='{.data.admin-password}' | base64 -d
+
+echo  # print newline
+```
+
+#### 3.3.4 Access the dashboards
+
+From a browser (on a machine that can resolve/reach the internal IP):
+
+- **Grafana**: `http://grafana.trench.internal`
+  - Username: `admin`
+  - Password: use the value retrieved in step 3.3.3
+  - Explore pre-installed Kubernetes dashboards and create custom queries
+
+- **Prometheus**: `http://prometheus.trench.internal`
+  - No authentication required (internal only)
+  - Use the web UI to explore metrics and run PromQL queries
+
+- **Jaeger**: `http://jaeger.trench.internal`
+  - No authentication required (internal only)
+  - Use the UI to view distributed traces from instrumented applications
+
+**Note:** If you set up a SOCKS proxy (section 2.1, Option B), configure your local browser to use it, then access these URLs directly from your local machine.
 
 ---
 
@@ -250,26 +306,23 @@ If the initial secret has already been consumed/deleted, you can retrieve or res
 
 ### 4.4 Access the ArgoCD UI
 
-1. Get the Ingress IP (from the NGINX LoadBalancer service):
+ArgoCD uses the same internal Ingress IP configured in section 3.3.
+
+1. If you haven't already, add an `/etc/hosts` entry for ArgoCD:
 
    ```bash
-   kubectl get svc -n infra-ingress ingress-nginx-controller
+   INGRESS_IP="<INGRESS_IP_FROM_SECTION_3.3.1>"
+   sudo sh -c "echo \"$INGRESS_IP argocd.trench.internal\" >> /etc/hosts"
    ```
 
-   Note the `EXTERNAL-IP` (internal IP in your VNet).
-
-2. On the jump host (or any machine that can reach that IP), add an `/etc/hosts` entry:
-
-   ```bash
-   sudo sh -c 'echo "<INGRESS_IP> argocd.trench.internal" >> /etc/hosts'
-   ```
-
-3. In a browser (from a machine that can resolve/reach that IP):
+2. In a browser (from a machine that can resolve/reach the internal IP):
 
    - Navigate to: `http://argocd.trench.internal`.
    - Login with:
      - Username: `admin`.
      - Password: use the value retrieved in step 4.3.
+
+**Note:** If you set up a SOCKS proxy (section 2.1, Option B), configure your local browser to use it, then access this URL directly from your local machine.
 
 ---
 

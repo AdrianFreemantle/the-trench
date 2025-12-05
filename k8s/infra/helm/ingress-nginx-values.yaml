@@ -25,3 +25,13 @@ controller:
     controllerValue: k8s.io/ingress-nginx
 
   watchIngressWithoutClass: true
+
+admissionWebhooks:
+  patch:
+    nodeSelector:
+      workload: platform
+    tolerations:
+      - key: 'workload'
+        operator: 'Equal'
+        value: 'platform'
+        effect: 'NoSchedule'
