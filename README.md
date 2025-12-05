@@ -54,15 +54,15 @@ This project is a teaching and capability-building exercise: how to design, prov
 
 The project proceeds in well-defined phases. Each phase builds on the previous one.
 
-- **Phase 0:** Repo structure, conventions, tooling
-- **Phase 1:** Terraform provisioning of Azure core infrastructure (hub-spoke VNets, Firewall, ACR, private AKS, Key Vault, Postgres, Service Bus)
-- **Phase 2:** Cluster add-ons, Workload Identity, Key Vault CSI, egress hardening, Log Analytics, Service Bus network rules, remote backend storage (all Terraform)
-- **Phase 3:** Observability stack (Prometheus, Grafana, OTEL) via Kubernetes manifests
-- **Phase 4:** Data and messaging integration (Postgres, Cosmos DB, Service Bus with Workload Identity)
-- **Phase 5:** Ingress, TLS, and first demo app (NGINX Ingress, cert-manager, Let's Encrypt)
-- **Phase 6:** Application services (TinyShop backend + Next.js UI)
-- **Phase 7:** CI/CD with GitHub Actions + GitOps with ArgoCD
-- **Phase 8:** Cloudflare Tunnel, WAF, and advanced topics (service mesh, Dapr, KEDA/event-driven autoscaling, node pool splitting)
+- **Phase 0:** Repository setup, conventions, and app skeletons
+- **Phase 1:** Core Azure infrastructure with Terraform (hub-spoke VNets, Firewall, ACR, private AKS, Key Vault, Postgres, Service Bus)
+- **Phase 2:** Cluster add-ons and security plumbing (jump host, Workload Identity, Key Vault CSI, egress hardening, Log Analytics, Service Bus network rules, remote backend storage)
+- **Phase 3:** Observability stack (internal NGINX Ingress, Prometheus, Grafana, OTEL Collector)
+- **Phase 4:** Ingress, TLS, and first demo app (DNS, public NGINX Ingress, cert-manager, Let's Encrypt, tiny echo app)
+- **Phase 5:** CI/CD & GitOps bootstrap (GitHub Actions for demo app, ArgoCD installation, GitOps flows, image promotion)
+- **Phase 6:** Application services + data integration (domain definition, Catalog API, Orders API, Order Worker, Next.js UI, Entra External ID, observability integration, alerting and SLOs)
+- **Phase 7:** Advanced CI/CD, rollout patterns & failure labs (expanded CI pipelines, deployment safety patterns, rollout/rollback labs, Terraform automation, ACR hardening)
+- **Phase 8:** Cloudflare & advanced topics (TLS with cert-manager, Cloudflare Tunnel, WAF/rate limiting, direct Key Vault usage, service mesh, Dapr, Azure Application Gateway + AGIC, full observability with Tempo/Loki, node pool splitting, KEDA event-driven autoscaling, Terraform remote backend migration, Terraform structure refactor)
 
 Each phase has a clear checkpoint defining what must work before moving on.
 
