@@ -1,0 +1,14 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: demo-api-dev
+  namespace: argocd
+spec:
+  project: default
+  source:
+    repoURL: https://github.com/AdrianFreemantle/the-trench.git
+    targetRevision: rel/dev
+    path: k8s/overlays/dev/apps
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: demo-api
