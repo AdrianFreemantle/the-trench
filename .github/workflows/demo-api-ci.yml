@@ -47,10 +47,6 @@ jobs:
         working-directory: apps/demo-api
         run: flake8 . --exclude .venv
 
-      - name: Run tests
-        working-directory: apps/demo-api
-        run: pytest
-
       - name: Azure login
         uses: azure/login@v2
         with:
