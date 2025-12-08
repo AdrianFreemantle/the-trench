@@ -12,6 +12,8 @@
   "author": "",
   "license": "MIT",
   "dependencies": {
-    "express": "^5.1.0"
+    "express": "^5.1.0",
+    "pg": "^8.13.0",
+    "@azure/identity": "^4.4.0"
   }
 }

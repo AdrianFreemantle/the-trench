@@ -30,6 +30,15 @@ spec:
             - containerPort: 4101
               name: http-port
               protocol: TCP
+          env:
+            - name: DB_HOST
+              value: 'trench-pg-flex-dev.postgres.database.azure.com'
+            - name: DB_PORT
+              value: '5432'
+            - name: DB_NAME
+              value: 'catalog'
+            - name: DB_USER
+              value: 'catalog_api_mi'
           resources:
             requests:
               memory: '64Mi'
