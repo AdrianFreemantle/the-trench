@@ -5,6 +5,10 @@ const { Client } = require('pg');
 const app = express();
 const PORT = process.env.PORT || 4101;
 
+// Chaos testing flags
+let simulateDead = false;
+let simulateUnready = false;
+
 const credential = new DefaultAzureCredential();
 const PG_SCOPE = 'https://ossrdbms-aad.database.windows.net/.default';
 
@@ -36,6 +40,10 @@ async function withClient(fn) {
 }
 
 app.get('/healthz', async (_req, res) => {
+  if (simulateUnready) {
+    console.log('Simulating unready pod - failing healthz');
+    return res.status(500).json({ status: 'degraded', error: 'chaos: simulated unready' });
+  }
   try {
     await withClient(async (client) => {
       await client.query('SELECT 1');
@@ -50,7 +58,32 @@ app.get('/healthz', async (_req, res) => {
 });
 
 app.get('/', (_req, res) => {
+  if (simulateDead) {
+    // Never respond - liveness probe will timeout and Kubernetes will restart
+    console.log('Simulating dead pod - not responding to /');
+    return;
+  }
   res.json({ message: 'Catalog API is running' });
+});
+
+// Chaos endpoints for testing
+app.post('/chaos/kill', (_req, res) => {
+  console.log('CHAOS: Simulating dead pod');
+  simulateDead = true;
+  res.json({ status: 'Pod will appear dead on next liveness check' });
+});
+
+app.post('/chaos/unready', (_req, res) => {
+  console.log('CHAOS: Simulating unready pod');
+  simulateUnready = true;
+  res.json({ status: 'Pod will appear unready on next readiness check' });
+});
+
+app.post('/chaos/recover', (_req, res) => {
+  console.log('CHAOS: Recovering pod');
+  simulateDead = false;
+  simulateUnready = false;
+  res.json({ status: 'Pod recovered' });
 });
 
 app.get('/products', async (_req, res) => {
