@@ -1,0 +1,98 @@
+name: catalog-api CI
+
+on:
+  push:
+    branches:
+      - rel/dev
+    paths:
+      - 'apps/catalog-api/**'
+      - '.github/workflows/catalog-api-ci.yml'
+      - 'k8s/base/apps/catalog-api/**'
+  pull_request:
+    branches:
+      - rel/dev
+    paths:
+      - 'apps/catalog-api/**'
+      - '.github/workflows/catalog-api-ci.yml'
+      - 'k8s/base/apps/catalog-api/**'
+  workflow_dispatch:
+
+env:
+  ACR_LOGIN_SERVER: trenchacrcoredev.azurecr.io
+  IMAGE_NAME: catalog-api
+
+permissions:
+  id-token: write
+  contents: write
+
+jobs:
+  build-scan-push-update-manifests:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install dependencies
+        working-directory: apps/catalog-api
+        run: npm ci
+
+      - name: Azure login
+        uses: azure/login@v2
+        with:
+          client-id: ${{ secrets.AZURE_CLIENT_ID }}
+          tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+          subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+
+      - name: ACR login
+        run: az acr login --name trenchacrcoredev
+
+      - name: Build and push image
+        uses: docker/build-push-action@v6
+        with:
+          context: ./apps/catalog-api
+          file: ./apps/catalog-api/Dockerfile
+          push: true
+          tags: |
+            ${{ env.ACR_LOGIN_SERVER }}/${{ env.IMAGE_NAME }}:${{ github.sha }}
+
+      - name: Trivy image scan
+        uses: aquasecurity/trivy-action@0.28.0
+        with:
+          image-ref: ${{ env.ACR_LOGIN_SERVER }}/${{ env.IMAGE_NAME }}:${{ github.sha }}
+          severity: CRITICAL,HIGH
+          ignore-unfixed: true
+          format: table
+
+      - name: Configure Git user
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+
+      - name: Install yq
+        run: |
+          sudo wget -qO /usr/local/bin/yq https://github.com/mikefarah/yq/releases/latest/download/yq_linux_amd64
+          sudo chmod +x /usr/local/bin/yq
+
+      - name: Update catalog-api image tag in dev overlay
+        env:
+          NEW_TAG: ${{ github.sha }}
+        run: |
+          yq -i '(.images[] | select(.name == "trenchacrcoredev.azurecr.io/catalog-api").newTag) = strenv(NEW_TAG)' k8s/overlays/dev/apps/kustomization.yaml
+          git diff k8s/overlays/dev/apps/kustomization.yaml
+
+      - name: Commit and push manifest changes
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          if git diff --quiet; then
+            echo "No manifest changes to commit"
+            exit 0
+          fi
+          git add k8s/overlays/dev/apps/kustomization.yaml
+          git commit -m "chore: update catalog-api image tag to ${GITHUB_SHA}"
+          git push
