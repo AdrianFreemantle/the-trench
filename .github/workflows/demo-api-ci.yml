@@ -23,7 +23,7 @@ env:
 
 permissions:
   id-token: write
-  contents: read
+  contents: write
 
 jobs:
   build-test-scan-push:
@@ -73,3 +73,32 @@ jobs:
           severity: CRITICAL,HIGH
           ignore-unfixed: true
           format: table
+
+      - name: Configure Git user
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+
+      - name: Install yq
+        run: |
+          sudo wget -qO /usr/local/bin/yq https://github.com/mikefarah/yq/releases/latest/download/yq_linux_amd64
+          sudo chmod +x /usr/local/bin/yq
+
+      - name: Update Kustomize image tag
+        env:
+          NEW_TAG: ${{ github.sha }}
+        run: |
+          yq -i '.images[0].newTag = strenv(NEW_TAG)' k8s/overlays/dev/apps/kustomization.yaml
+          git diff k8s/overlays/dev/apps/kustomization.yaml
+
+      - name: Commit and push manifest changes
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          if git diff --quiet; then
+            echo "No manifest changes to commit"
+            exit 0
+          fi
+          git add k8s/overlays/dev/apps/kustomization.yaml
+          git commit -m "chore: update demo-api image tag to ${GITHUB_SHA}"
+          git push
