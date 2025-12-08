@@ -14,6 +14,7 @@ spec:
     metadata:
       labels:
         app: catalog-api
+        azure.workload.identity/use: 'true'
     spec:
       serviceAccountName: catalog-api
       nodeSelector:
