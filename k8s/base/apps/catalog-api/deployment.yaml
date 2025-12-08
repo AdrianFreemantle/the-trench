@@ -40,6 +40,9 @@ spec:
             # Postgres role used by catalog-api, created via the DB bootstrap runbook
             - name: DB_USER
               value: 'catalog_api_mi'
+            # UAMI client ID for catalog-api; enables DefaultAzureCredential to use AKS Workload Identity
+            - name: AZURE_CLIENT_ID
+              value: 'bf3a1769-3d8d-41dc-a79f-aa748852f58f'
           resources:
             requests:
               memory: '64Mi'
