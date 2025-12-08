@@ -37,6 +37,7 @@ spec:
               value: '5432'
             - name: DB_NAME
               value: 'catalog'
+            # Postgres role used by catalog-api, created via the DB bootstrap runbook
             - name: DB_USER
               value: 'catalog_api_mi'
           resources:
