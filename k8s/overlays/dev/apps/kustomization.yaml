@@ -7,7 +7,6 @@ labels:
       env: dev
     includeSelectors: true
     includeTemplates: true
-
 images:
   - name: trenchacrcoredev.azurecr.io/demo-api
-    newTag: v1
+    newTag: ba4ec8c1b767d68996abb2e6f5d6c6e60ffa071a
