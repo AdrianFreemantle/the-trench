@@ -1,0 +1,10 @@
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: catalog-api-pdb
+  namespace: catalog-api
+spec:
+  minAvailable: 2 # want at least 2 pods available
+  selector:
+    matchLabels:
+      app: catalog-api
