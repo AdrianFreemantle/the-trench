@@ -100,6 +100,85 @@ Tech:
 
 ---
 
+## Domain Model
+
+The domain is intentionally small. The goal is to provide realistic data flows and failure points, not rich business features.
+
+- **User**
+  - Logical application user authenticated via Entra External ID.
+  - Identified by an external identity subject (OIDC sub / object id) rather than a local password.
+
+- **Product**
+  - Basic catalog item: `id`, `name`, `description`, `price` (and optionally a simple `stock` field for labs).
+  - Owned by `catalog-api` and stored in the Postgres `catalog` database.
+
+- **Cart** / **CartItem**
+  - Per-user shopping cart containing selected products and quantities.
+  - Owned by `orders-api` and stored in the Postgres `orders` database.
+
+- **Order** / **OrderItem**
+  - Snapshot of what the user bought at checkout time.
+  - Contains a stable total price and copy of product details needed for history.
+  - Owned by `orders-api` and stored in the Postgres `orders` database.
+
+- **OrderEvent** (timeline / audit document)
+  - Represents derived events such as `OrderPlaced`, `OrderConfirmed`, or synthetic notifications.
+  - Owned by `order-worker` and stored in Cosmos DB as documents to enable flexible querying and lab scenarios.
+
+Relationships are deliberately simple:
+
+- A `User` has one active `Cart` and many `Orders`.
+- An `Order` has many `OrderItems`.
+- An `Order` can have many `OrderEvents` in Cosmos DB.
+
+---
+
+## Key Flows
+
+These flows are chosen to exercise HTTP APIs, Postgres, Service Bus, Cosmos DB, identity, ingress, observability, and GitOps without adding unnecessary business complexity.
+
+### 1. Browse products
+
+- `shop-ui` calls `catalog-api` (`GET /products`, `GET /products/{id}`).
+- `catalog-api` reads from the Postgres `catalog` database.
+- No state is written; this flow is primarily for ingress, caching, and observability exercises.
+
+### 2. Manage cart
+
+- Authenticated user interacts with `shop-ui`.
+- `shop-ui` calls `orders-api`:
+  - `GET /cart` to retrieve current cart.
+  - `POST /cart/items` to add/update/remove items.
+- `orders-api` persists the cart in the Postgres `orders` database keyed by the external user id.
+- This flow is used to explore CRUD patterns, Postgres connectivity, and failure modes (e.g. DB unavailable, network policies).
+
+### 3. Checkout and order creation
+
+- `shop-ui` calls `orders-api` `POST /checkout`.
+- `orders-api`:
+  - Reads the user cart from Postgres.
+  - Calls `catalog-api` to resolve product details/prices.
+  - Writes an `Order` + `OrderItems` to the Postgres `orders` database.
+  - Publishes an `OrderPlaced` message to the Service Bus `orders` queue.
+- This flow exercises synchronous HTTP between services, Postgres writes, and Service Bus producer behavior.
+
+### 4. Order event processing (worker)
+
+- `order-worker` listens to the Service Bus `orders` queue.
+- For each `OrderPlaced` message it:
+  - Parses the payload and writes an `OrderEvent` document into Cosmos DB.
+  - Optionally emits a synthetic "email sent" event or structured log for observability labs.
+- This flow provides hooks for failure labs (message dead-lettering, poison messages, transient failures, retries, and scaling the worker).
+
+### 5. View order history
+
+- `shop-ui` calls `orders-api` (`GET /orders`, `GET /orders/{id}`).
+- `orders-api` primarily reads from the Postgres `orders` database.
+- Optionally, `orders-api` can enrich responses with data from Cosmos DB `OrderEvent` documents to show a coarse timeline.
+- This flow is used to demonstrate read patterns, indexing, and failure cases where either Postgres or Cosmos is degraded.
+
+---
+
 ## Infrastructure Exercise Coverage
 
 This minimal system drives the full infra stack:
