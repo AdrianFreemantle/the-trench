@@ -6,7 +6,7 @@ metadata:
 spec:
   ingressClassName: nginx
   rules:
-    - host: catalog-api.continuecode.com
+    - host: catalog-api.trench.internal
       http:
         paths:
           - path: /
