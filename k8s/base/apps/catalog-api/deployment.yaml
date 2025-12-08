@@ -1,0 +1,39 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: catalog-api
+  namespace: catalog-api
+  labels:
+    app: catalog-api
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: catalog-api
+  template:
+    metadata:
+      labels:
+        app: catalog-api
+    spec:
+      serviceAccountName: catalog-api
+      nodeSelector:
+        workload: apps
+      tolerations:
+        - key: 'workload'
+          operator: 'Equal'
+          value: 'apps'
+          effect: 'NoSchedule'
+      containers:
+        - name: catalog-api
+          image: trenchacrcoredev.azurecr.io/catalog-api:v1
+          ports:
+            - containerPort: 4101
+              name: http-port
+              protocol: TCP
+          resources:
+            requests:
+              memory: '64Mi'
+              cpu: '50m'
+            limits:
+              memory: '128Mi'
+              cpu: '250m'
