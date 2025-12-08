@@ -10,8 +10,8 @@ spec:
   strategy:
     type: RollingUpdate
     rollingUpdate:
-      maxUnavailable: 2
-      maxSurge: 1
+      maxUnavailable: 3
+      maxSurge: 2
   selector:
     matchLabels:
       app: catalog-api
