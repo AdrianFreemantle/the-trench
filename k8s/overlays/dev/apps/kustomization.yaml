@@ -11,4 +11,4 @@ images:
   - name: trenchacrcoredev.azurecr.io/demo-api
     newTag: ba4ec8c1b767d68996abb2e6f5d6c6e60ffa071a
   - name: trenchacrcoredev.azurecr.io/catalog-api
-    newTag: a5ae18c2ead9b8e486df195fad3f3ec056c31fde
+    newTag: a74857ffcf60df5134e0cd9b3c1dd91135756e7f
