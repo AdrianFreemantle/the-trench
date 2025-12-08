@@ -11,11 +11,13 @@
 ###############################################
 
 ###############################################
-# Kubernetes namespace for application workloads
-# All app services deploy here.
+# Kubernetes namespaces for application workloads
+# Each service deploys to its own namespace.
 ###############################################
 locals {
-  app_namespace = "tinyshop"
+  catalog_api_namespace  = "catalog-api"
+  orders_api_namespace   = "orders-api"
+  order_worker_namespace = "order-worker"
 }
 
 ###############################################
@@ -40,7 +42,7 @@ resource "azurerm_federated_identity_credential" "catalog_api" {
 
   audience = ["api://AzureADTokenExchange"]
   issuer   = azurerm_kubernetes_cluster.aks.oidc_issuer_url
-  subject  = "system:serviceaccount:${local.app_namespace}:catalog-api"
+  subject  = "system:serviceaccount:${local.catalog_api_namespace}:catalog-api"
 }
 
 ###############################################
@@ -66,7 +68,7 @@ resource "azurerm_federated_identity_credential" "orders_api" {
 
   audience = ["api://AzureADTokenExchange"]
   issuer   = azurerm_kubernetes_cluster.aks.oidc_issuer_url
-  subject  = "system:serviceaccount:${local.app_namespace}:orders-api"
+  subject  = "system:serviceaccount:${local.orders_api_namespace}:orders-api"
 }
 
 ###############################################
@@ -92,7 +94,7 @@ resource "azurerm_federated_identity_credential" "order_worker" {
 
   audience = ["api://AzureADTokenExchange"]
   issuer   = azurerm_kubernetes_cluster.aks.oidc_issuer_url
-  subject  = "system:serviceaccount:${local.app_namespace}:order-worker"
+  subject  = "system:serviceaccount:${local.order_worker_namespace}:order-worker"
 }
 
 ###############################################

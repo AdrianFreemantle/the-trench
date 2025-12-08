@@ -43,6 +43,18 @@ spec:
             # UAMI client ID for catalog-api; enables DefaultAzureCredential to use AKS Workload Identity
             - name: AZURE_CLIENT_ID
               value: 'bf3a1769-3d8d-41dc-a79f-aa748852f58f'
+          livenessProbe:
+            httpGet:
+              path: /
+              port: 4101
+            initialDelaySeconds: 10
+            periodSeconds: 10
+          readinessProbe:
+            httpGet:
+              path: /
+              port: 4101
+            initialDelaySeconds: 5
+            periodSeconds: 5
           resources:
             requests:
               memory: '64Mi'
