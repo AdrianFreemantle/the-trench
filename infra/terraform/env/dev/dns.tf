@@ -66,3 +66,12 @@ resource "azurerm_private_dns_a_record" "jaeger" {
   records             = [var.nginx_ingress_lb_ip]
   tags                = module.conventions.tags
 }
+
+resource "azurerm_private_dns_a_record" "catalog-api" {
+  name                = "catalog-api"
+  zone_name           = azurerm_private_dns_zone.internal.name
+  resource_group_name = azurerm_resource_group.aks.name
+  ttl                 = 300
+  records             = [var.nginx_ingress_lb_ip]
+  tags                = module.conventions.tags
+}
