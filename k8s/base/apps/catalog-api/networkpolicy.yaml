@@ -1,0 +1,61 @@
+# Temporary NetworkPolicy used to explore the impact of restricting catalog-api traffic.
+# Only allows ingress from demo-api and minimal egress required for DNS and Azure AD/Postgres.
+# This policy is for testing purposes and is not intended as a final production configuration.
+#
+# How to test:
+# - From a demo-api pod:
+#     kubectl exec -n demo-api <pod> -- \
+#       curl -sS http://catalog-api.catalog-api.svc.cluster.local:4101/products
+#   (should succeed)
+# - From the jump host via ingress:
+#     curl -v catalog-api.trench.internal/products
+#   (should fail because ingress-nginx cannot reach catalog-api pods)
+
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: catalog-api-network-policy
+  namespace: catalog-api
+spec:
+  podSelector:
+    matchLabels:
+      app: catalog-api
+  policyTypes:
+    - Ingress
+    - Egress
+  ingress:
+    - from:
+        - namespaceSelector:
+            matchLabels:
+              name: demo-api
+          podSelector:
+            matchLabels:
+              app: demo-api
+      ports:
+        - protocol: TCP
+          port: 4101
+  egress:
+    # Allow DNS to kube-dns/CoreDNS in kube-system
+    - to:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: kube-system
+      ports:
+        - protocol: UDP
+          port: 53
+        - protocol: TCP
+          port: 53
+    # Allow HTTPS egress for Azure AD / control-plane dependencies
+    - to:
+        - ipBlock:
+            cidr: 0.0.0.0/0
+      ports:
+        - protocol: TCP
+          port: 443
+    # Allow Postgres egress (Flex server over 5432)
+    - to:
+        - ipBlock:
+            cidr: 0.0.0.0/0
+      ports:
+        - protocol: TCP
+          port: 5432
