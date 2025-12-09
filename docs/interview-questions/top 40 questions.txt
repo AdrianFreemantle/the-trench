@@ -1,0 +1,77 @@
+# MUST-MASTER AKS PRINCIPAL INTERVIEW SET (~40 QUESTIONS)
+
+## 1. Identity, Workload Identity, Secrets
+
+1. Explain workload identity in AKS, including the end-to-end chain Pod → ServiceAccount → OIDC token → Entra ID → Managed Identity → Key Vault.
+2. How does Workload Identity differ from the older MSI and AAD Pod Identity approaches, and what were the weaknesses of AAD Pod Identity?
+3. When would you choose user-assigned managed identity vs system-assigned managed identity for workloads running on AKS?
+4. How do you design least-privilege access for AKS workloads (per-pod/per-namespace identity, scoping in Entra ID, and Key Vault permissions)?
+5. How do you securely distribute secrets to workloads (CSI driver vs synced Kubernetes Secrets) and what are the trade-offs?
+6. How do you rotate secrets and Key Vault secrets used by pods without downtime or mass restarts?
+
+## 2. Networking, Ingress, Private Connectivity
+
+7. Compare Azure CNI and kubenet in detail, focusing on IP consumption, performance, and operational trade-offs in large clusters.
+8. Explain north–south traffic flow for a private AKS workload exposed via Internet → Front Door (or APIM) → App Gateway → AKS Ingress → Service → Pod.
+9. When would you front AKS with APIM, with App Gateway, or with Front Door? Give concrete decision criteria for each.	
+10. How do you secure east–west traffic inside the cluster (network policies, service mesh, mTLS, and segmentation)?
+11. When would you use Private Link for PaaS data-plane access from AKS, and how does that interact with hub–spoke VNets?
+12. How do you design DNS for multi-region AKS deployments, including split-horizon, private zones, and failover?
+13. How do Azure NAT Gateway and SNAT port limits affect AKS egress design at scale, and how do you mitigate SNAT exhaustion?
+
+## 3. Scaling, HPA, KEDA, Backpressure
+
+14. Why is CPU-based HPA often insufficient for event-driven workloads, and what alternative signals do you use for scaling?
+15. How does KEDA scale based on queue length or Kafka lag, and how do you configure it safely for spiky traffic?
+16. Distinguish HPA, KEDA, cluster autoscaler, and node autoscaling, and explain how they interact in a real system.
+17. How do you design overload protection and load shedding inside AKS to protect critical services from being overwhelmed?
+18. How do you prevent cascading failures across microservices (timeouts, retries, bulkheads, circuit breakers)?
+19. What happens when a node pool hits max capacity, and how do you design capacity planning and guardrails around that?
+
+## 4. Cluster Architecture, Isolation, When NOT to use AKS
+
+20. How do you design node pools for workload isolation (system vs user workloads, CPU-bound vs memory-bound vs GPU, noisy neighbors)?
+21. When do you choose separate node pools vs separate clusters (per environment, per tenant, per business unit)?
+22. How would you design AKS for a multi-tenant SaaS product (per-tenant isolation model, shared vs dedicated resources, blast radius)?
+23. When would you NOT use AKS at all, and instead use App Service, Functions, or other PaaS options?
+
+## 5. Ingress, Mesh, Traffic Control
+
+24. How does the NGINX ingress controller work under the hood, and what can make it a bottleneck at very high load?
+25. When do you need a service mesh (Istio/Linkerd/etc.), and what concrete problems does it solve beyond basic ingress?
+26. What is mTLS and how do you enforce it for service-to-service traffic inside AKS?
+27. How do you implement rate limiting and per-service protection at the ingress layer?
+28. How do you safely expose sensitive admin or internal endpoints in an AKS-based system?
+
+## 6. High Availability & Multi-Region
+
+29. How do you design AKS across multiple availability zones, and what are the main limitations or gotchas?
+30. How do you deploy an application active-active across multiple regions on AKS, including traffic routing and failover?
+31. How do you handle database geo-replication in a multi-region AKS design, and avoid split-brain in stateful workloads?
+32. How do you coordinate DNS-level failover and preserve user experience during regional outages?
+
+## 7. Security, RBAC, Policies, Supply Chain
+
+33. What is the difference between Azure RBAC and Kubernetes RBAC, and how do you layer them effectively in a platform?
+34. How do you enforce namespace isolation and Pod Security (PSS/PSA, restricted capabilities, no-privileged containers)?
+35. How do you secure egress from AKS (egress lockdown, firewall, NAT, FQDN/endpoint controls)?
+36. How do you enforce image provenance and supply chain security (ACR, signing, scanning, admission control / policy)?
+
+## 8. State, Storage, Data Access
+
+37. When is it a bad idea to run Kafka/RabbitMQ/Redis directly in AKS, and what alternatives do you prefer?
+38. How do you avoid connection storms and database overload when many pods hit SQL or other stateful backends during scale-out?
+39. How do you ensure correctness and consistency when scaling stateful handlers horizontally (idempotency, ordering, concurrency control)?
+
+## 9. Observability, CI/CD, Failure Modes
+
+40. Explain how metrics, logs, and traces flow end-to-end in an AKS platform (including OpenTelemetry) and how you design SLO-based alerting.
+41. Explain GitOps vs CI/CD push deployments, how Flux (or Argo) reconciles state, and how you structure per-environment separation.
+42. Walk through your approach when a rollout degrades cluster performance or causes a partial outage: what you check first, what you roll back, and how you learn from it.
+43. Walk through your process for debugging: 
+    - pods stuck in Pending, 
+    - pods Running but not responding, 
+    - ingress timeouts, and 
+    - DNS failures inside AKS.
+44. For .NET microservices on AKS, how do you prevent connection storms, socket exhaustion, and GC/memory issues during aggressive scaling?
+
