@@ -52,10 +52,10 @@ spec:
       ports:
         - protocol: TCP
           port: 443
-    # Allow Postgres egress (Flex server over 5432)
+    # Allow Postgres egress (Flex server over 5432 via private endpoint subnet)
     - to:
         - ipBlock:
-            cidr: 0.0.0.0/0
+            cidr: 10.1.1.0/24
       ports:
         - protocol: TCP
           port: 5432
